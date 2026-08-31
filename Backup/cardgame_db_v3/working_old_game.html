@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recess Duel // Work in Progress</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Clean Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@600;700&family=Syne:wght@700;800&family=Fira+Code:wght@400;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --body-font: 'Inter', sans-serif;
+            --header-font: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            font-family: var(--body-font);
+            background-color: #f6f5f2;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #1c1917;
+            letter-spacing: -0.01em;
+        }
+
+        .header-font { font-family: var(--header-font) !important; font-weight: 700; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        .hand-font { font-family: 'Caveat', cursive; }
+
+        .sketch-border {
+            border: 3px solid #1c1917;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 6px 8px 0px rgba(28, 25, 23, 0.15);
+        }
+        .sketch-border-sm {
+            border: 2px solid #1c1917;
+            border-radius: 120px 8px 110px 8px/8px 110px 8px 120px;
+        }
+
+        .pencil-hatch {
+            background-color: #2b2725;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.15),
+                rgba(255, 255, 255, 0.15) 3px,
+                transparent 3px,
+                transparent 7px
+            );
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .pencil-hatch-light {
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(28, 25, 23, 0.08),
+                rgba(28, 25, 23, 0.08) 3px,
+                transparent 3px,
+                transparent 8px
+            );
+        }
+
+        @keyframes pencil-wiggle {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            75% { transform: translateY(1px) rotate(1.5deg); }
+        }
+        .animate-pencil-jitter {
+            animation: pencil-wiggle 0.2s infinite ease-in-out;
+        }
+
+        @keyframes subtle-float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(-0.5deg); }
+        }
+        .animate-desk-float {
+            animation: subtle-float 4s ease-in-out infinite;
+        }
+
+        @keyframes marker-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .animate-marker-pulse {
+            animation: marker-blink 1.8s infinite ease-in-out;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1c1917; border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col justify-between p-6 md:p-8 select-none relative">
+
+    <!-- Sketchy Board Outer Border -->
+    <div class="absolute inset-4 pointer-events-none sketch-border border-[4px] z-40 border-stone-900 shadow-[inset_0_0_30px_rgba(0,0,0,0.05)]"></div>
+
+    <!-- DOODLE LOADING TRANSITION OVERLAY -->
+    <div id="sceneLoader" class="fixed inset-0 bg-[#f6f5f2] z-50 flex flex-col items-center justify-center transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="max-w-md w-full p-8 text-center relative flex flex-col items-center">
+            <div class="w-full bg-white p-6 sketch-border relative">
+                <span class="text-3xl inline-block animate-pencil-jitter mb-1 code-font font-black text-stone-800">[ /_ ]</span>
+                <h2 id="loaderTitle" class="text-2xl font-black header-font text-stone-900 uppercase tracking-wider">
+                    RETURNING TO DESK...
+                </h2>
+                <p id="loaderSubtext" class="text-sm code-font text-rose-800 font-bold tracking-wide mt-1">
+                    Packing battle mat & reopening register...
+                </p>
+
+                <div class="mt-6 w-full p-1 sketch-border-sm bg-stone-50 relative h-7 overflow-hidden">
+                    <div id="loaderProgressBar" class="pencil-hatch h-full w-0 transition-all duration-200 relative rounded-sm"></div>
+                </div>
+
+                <div class="mt-3 flex justify-between items-center text-xs code-font text-stone-500 font-bold">
+                    <span id="loaderQueryLog">SELECT * FROM PROFILE;</span>
+                    <span id="loaderPercent" class="text-stone-900 font-black">0%</span>
+                </div>
+            </div>
+            <div class="mt-4 text-xs code-font text-stone-400 font-bold tracking-widest uppercase">
+                // Please hold while ink dries
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP BAR -->
+    <header class="w-full flex justify-between items-center z-50 px-2">
+        <button type="button" onclick="returnToRunDashboard()" class="cursor-pointer bg-white hover:bg-stone-100 text-stone-900 text-xs font-black px-4 py-2 sketch-border-sm code-font uppercase tracking-wider transition-all transform active:scale-95 flex items-center gap-2">
+            &larr; RETURN TO RUN DASHBOARD
+        </button>
+
+        <div class="flex items-center gap-3">
+            <span class="bg-stone-900 text-white text-xs px-3.5 py-1.5 sketch-border-sm code-font font-bold tracking-wider">
+                PERIOD 04 // AISLE 3
+            </span>
+            <span id="activeRunPill" class="text-xs font-black header-font text-rose-800 uppercase tracking-widest bg-rose-50 px-3 py-1 border border-rose-200 sketch-border-sm">
+                DESK: ACTIVE RUN
+            </span>
+        </div>
+    </header>
+
+    <!-- MAIN CENTERPIECE: WORK IN PROGRESS STAGE -->
+    <main class="w-full flex-grow flex flex-col items-center justify-center z-30 max-w-2xl mx-auto px-4 text-center">
+        
+        <div class="w-full bg-white p-8 md:p-10 sketch-border relative animate-desk-float shadow-xl">
+            
+            <!-- Notice Stamp -->
+            <div class="absolute -top-3.5 right-6 bg-amber-100 border-2 border-stone-900 px-3 py-0.5 rounded sketch-border-sm text-[11px] code-font font-black text-amber-950 uppercase tracking-wider">
+                // CLASSROOM NOTICE
+            </div>
+
+            <!-- Caution Icon Badge -->
+            <div class="flex justify-center mb-3">
+                <div class="w-16 h-16 bg-rose-50 border-2 border-stone-900 sketch-border-sm flex items-center justify-center text-3xl font-black code-font text-rose-700 shadow-inner">
+                    !
+                </div>
+            </div>
+
+            <!-- Main Heading -->
+            <h1 class="text-3xl md:text-4xl font-black header-font text-stone-900 uppercase tracking-tight">
+                WORK IN PROGRESS //
+            </h1>
+            
+            <p class="text-xs md:text-sm font-bold code-font text-rose-800 uppercase tracking-widest mt-1">
+                The recess duel combat mat is currently being drafted
+            </p>
+
+            <!-- Handwritten Seating Note -->
+            <div class="my-6 p-4 bg-stone-50 pencil-hatch-light border-2 border-stone-900 rounded-lg text-left relative">
+                <p class="hand-font text-2xl md:text-3xl text-stone-800 leading-tight">
+                    "The proctor took the battle cards to the teacher's lounge. Come back during Period 05 when the board layout is fully shaded and ready for clash."
+                </p>
+                <span class="block text-right text-xs code-font font-black text-stone-400 mt-2">
+                    — SEATMATE (DESK #14)
+                </span>
+            </div>
+
+            <!-- Telemetry / Verified Session Parameters -->
+            <div class="border-t-2 border-dashed border-stone-300 pt-4 grid grid-cols-3 gap-2 text-center code-font">
+                <div class="bg-stone-50 p-2 border border-stone-200 rounded">
+                    <span class="block text-[9px] font-bold text-stone-400 uppercase">RUN SESSION</span>
+                    <span id="sessionNameVal" class="text-xs font-black text-stone-800 uppercase truncate block">--</span>
+                </div>
+                <div class="bg-stone-50 p-2 border border-stone-200 rounded">
+                    <span class="block text-[9px] font-bold text-stone-400 uppercase">PROFILE ID</span>
+                    <span id="profileIdVal" class="text-xs font-black text-stone-800 uppercase block">--</span>
+                </div>
+                <div class="bg-amber-50 p-2 border border-amber-200 rounded">
+                    <span class="block text-[9px] font-bold text-amber-800 uppercase">CRAYON BALANCE</span>
+                    <span class="text-xs font-black text-amber-900 uppercase block">50 CRAYONS</span>
+                </div>
+            </div>
+
+            <!-- Return Action Button -->
+            <div class="mt-6 flex justify-center gap-3">
+                <button type="button" onclick="returnToRunDashboard()" class="bg-stone-900 hover:bg-rose-900 text-white font-black header-font text-xs px-6 py-2.5 rounded uppercase tracking-wider transition-all transform active:scale-95 shadow cursor-pointer">
+                    &larr; BACK TO RUN DASHBOARD
+                </button>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- FOOTER STATUS -->
+    <footer class="w-full text-center z-30 pb-2">
+        <span class="text-[11px] code-font font-bold text-stone-400 uppercase tracking-widest animate-marker-pulse">
+            // STATUS: DATABASE STATE SYNCHRONIZED & SAVED // COME BACK LATER
+        </span>
+    </footer>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const activeRun = params.get('run') || 'MAIN DESK';
+        const activeId = params.get('profile_id') || '1';
+        const activeAccountId = params.get('account_id') || sessionStorage.getItem('logged_account_id') || '1';
+
+        document.getElementById('activeRunPill').innerText = `DESK: ${activeRun.toUpperCase()}`;
+        document.getElementById('sessionNameVal').innerText = activeRun.toUpperCase();
+        document.getElementById('profileIdVal').innerText = `#${activeId}`;
+
+        // Marker Audio
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playMarkerSqueak(pitchStart = 500, pitchEnd = 800, duration = 0.08) {
+            initAudio();
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(pitchStart * 0.7, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(pitchEnd * 0.7, audioCtx.currentTime + duration);
+                gainNode.gain.setValueAtTime(0.025, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function executeWithLoader(options, actionCallback) {
+            const loader = document.getElementById('sceneLoader');
+            const bar = document.getElementById('loaderProgressBar');
+            const title = document.getElementById('loaderTitle');
+            const subtext = document.getElementById('loaderSubtext');
+            const sqlLog = document.getElementById('loaderQueryLog');
+            const percent = document.getElementById('loaderPercent');
+
+            title.innerText = options.title || "PROCESSING...";
+            bar.style.width = '0%';
+            percent.innerText = '0%';
+
+            loader.classList.remove('opacity-0', 'pointer-events-none');
+            loader.classList.add('opacity-100');
+
+            const steps = options.steps || [
+                { pct: 35, msg: "Closing match stage...", sql: "UPDATE PROFILE SET In_Match=0;" },
+                { pct: 75, msg: "Retrieving active run slots...", sql: `SELECT * FROM PROFILE WHERE Account_ID=${activeAccountId};` },
+                { pct: 100, msg: "Returning to desk selection...", sql: "HTTP/1.1 200 OK" }
+            ];
+
+            let stepIdx = 0;
+            const runStep = () => {
+                if (stepIdx >= steps.length) {
+                    setTimeout(() => {
+                        if (actionCallback) actionCallback();
+                    }, 200);
+                    return;
+                }
+
+                const step = steps[stepIdx];
+                bar.style.width = step.pct + '%';
+                percent.innerText = step.pct + '%';
+                subtext.innerText = step.msg;
+                sqlLog.innerText = step.sql;
+
+                playMarkerSqueak(400 + (stepIdx * 120), 700 + (stepIdx * 140), 0.08, 0.03);
+
+                stepIdx++;
+                setTimeout(runStep, options.stepDelay || 130);
+            };
+
+            setTimeout(runStep, 80);
+        }
+
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('mouseenter', () => playMarkerSqueak(600, 900, 0.06));
+        });
+
+        // Smooth graphite loader into Run Dashboard in index.html
+        function returnToRunDashboard() {
+            playMarkerSqueak(800, 400, 0.15, 0.05);
+            executeWithLoader({
+                title: "RESTORING DESK SELECTION...",
+                stepDelay: 120
+            }, () => {
+                window.location.href = `index.html?view=dashboard&account_id=${activeAccountId}`;
+            });
+        }
+    </script>
+</body>
+</html>
