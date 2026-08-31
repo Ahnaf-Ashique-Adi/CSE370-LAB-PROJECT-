@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Things we Show and Tell</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@600;700&family=Syne:wght@700;800&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js -->
+    <script src="three.min.js"></script>
+
+    <style>
+        :root {
+            --body-font: 'Inter', sans-serif;
+            --header-font: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            font-family: var(--body-font);
+            background-color: #f6f5f2;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #1c1917;
+            letter-spacing: -0.01em;
+        }
+
+        .header-font { font-family: var(--header-font) !important; font-weight: 700; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        
+        .sketch-border {
+            border: 3px solid #1c1917;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 4px 4px 0px rgba(28, 25, 23, 0.15);
+        }
+        .sketch-border-sm {
+            border: 2px solid #1c1917;
+            border-radius: 120px 8px 110px 8px/8px 110px 8px 120px;
+        }
+        .highlight-ink { background-color: rgba(220, 38, 38, 0.12); }
+        .highlight-blue-ink { background-color: rgba(37, 99, 235, 0.1); }
+        .highlight-green-ink { background-color: rgba(16, 185, 129, 0.1); }
+
+        .pencil-hatch {
+            background-color: #2b2725;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.15),
+                rgba(255, 255, 255, 0.15) 3px,
+                transparent 3px,
+                transparent 7px
+            );
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes pencil-wiggle {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            75% { transform: translateY(1px) rotate(1.5deg); }
+        }
+        .animate-pencil-jitter {
+            animation: pencil-wiggle 0.2s infinite ease-in-out;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1c1917; border-radius: 3px; }
+    </style>
+
+    <script>
+        const initialSavedFont = localStorage.getItem('game_font_preset') || 'technical';
+        applyFontPreset(initialSavedFont, false);
+
+        function applyFontPreset(preset, notifyTerminal = true) {
+            let bodyFont = "'Inter', sans-serif";
+            let headerFont = "'Space Grotesk', sans-serif";
+
+            if (preset === 'blueprint') {
+                bodyFont = "'JetBrains Mono', monospace";
+                headerFont = "'Chakra Petch', sans-serif";
+            } else if (preset === 'editorial') {
+                bodyFont = "'Plus Jakarta Sans', sans-serif";
+                headerFont = "'Syne', sans-serif";
+            }
+
+            document.documentElement.style.setProperty('--body-font', bodyFont);
+            document.documentElement.style.setProperty('--header-font', headerFont);
+            localStorage.setItem('game_font_preset', preset);
+
+            if (notifyTerminal && typeof writeToSqlTerminal === 'function') {
+                writeToSqlTerminal(`UPDATE SYSTEM_SETTINGS SET Font_Preset = '${preset.toUpperCase()}';`);
+            }
+        }
+    </script>
+</head>
+<body class="h-screen w-screen overflow-hidden relative select-none flex flex-col justify-between">
+
+    <!-- Outermost Sketch Border -->
+    <div class="absolute inset-4 pointer-events-none sketch-border border-[4px] z-40 border-stone-900 shadow-[inset_0_0_30px_rgba(0,0,0,0.05)]"></div>
+
+    <!-- DOODLE LOADING TRANSITION OVERLAY -->
+    <div id="sceneLoader" class="fixed inset-0 bg-[#f6f5f2] z-50 flex flex-col items-center justify-center transition-all duration-300 opacity-0 pointer-events-none">
+        <div class="max-w-md w-full p-8 text-center relative flex flex-col items-center">
+            <div class="w-full bg-white p-6 sketch-border relative">
+                <span class="text-3xl inline-block animate-pencil-jitter mb-1 code-font font-black text-stone-800">[ /_ ]</span>
+                <h2 id="loaderTitle" class="text-2xl font-black header-font text-stone-900 uppercase tracking-wider">
+                    RESTORING DESK LEDGER...
+                </h2>
+                <p id="loaderSubtext" class="text-sm code-font text-rose-800 font-bold tracking-wide mt-1">
+                    Synchronizing student run profile...
+                </p>
+
+                <div class="mt-6 w-full p-1 sketch-border-sm bg-stone-50 relative h-7 overflow-hidden">
+                    <div id="loaderProgressBar" class="pencil-hatch h-full w-0 transition-all duration-200 relative rounded-sm"></div>
+                </div>
+
+                <div class="mt-3 flex justify-between items-center text-xs code-font text-stone-500 font-bold">
+                    <span id="loaderQueryLog">SELECT * FROM PROFILE;</span>
+                    <span id="loaderPercent" class="text-stone-900 font-black">0%</span>
+                </div>
+            </div>
+            <div class="mt-4 text-xs code-font text-stone-400 font-bold tracking-widest uppercase">
+                // Please hold while ink dries
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL HUD HEADER -->
+    <header class="w-full pt-8 px-8 flex justify-between items-center z-50">
+        <button id="backToMenuBtn" onclick="returnToMenu()" class="opacity-0 pointer-events-none translate-x-[-20px] transition-all duration-500 bg-white hover:bg-stone-100 text-stone-900 text-sm font-black px-6 py-2.5 sketch-border-sm flex items-center gap-2">
+            &larr; BACK TO MENU
+        </button>
+    </header>
+
+    <!-- FLOATING RAW SQL TERMINAL PANEL -->
+    <div id="sqlTerminal" class="fixed bottom-8 right-8 w-[380px] bg-stone-950 text-emerald-400 p-4 rounded-xl shadow-2xl z-50 border-2 border-stone-800 transition-all duration-500 hover:scale-[1.01] flex flex-col transform translate-x-[450px] opacity-0 pointer-events-none">
+        <div class="flex justify-between items-center border-b border-stone-800 pb-2 mb-2 text-[10px] tracking-widest font-black uppercase text-stone-400 code-font">
+            <span class="flex items-center gap-1.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                RAW_SQL_MONITOR
+            </span>
+            <button onclick="toggleSqlConsole()" class="text-stone-400 hover:text-rose-400 text-[10px] font-black border border-stone-800 px-1.5 py-0.5 rounded code-font uppercase bg-stone-900/50 hover:bg-stone-900">
+                [ HIDE ]
+            </button>
+        </div>
+        <div class="h-28 overflow-y-auto text-xs code-font space-y-1.5 scrollbar-thin" id="sqlConsoleLog">
+            <div class="text-stone-500">-- Ready for raw SQL transactions...</div>
+        </div>
+    </div>
+
+    <!-- MAIN WORKSPACE -->
+    <main id="workspace" class="w-full flex-grow flex flex-col md:flex-row items-center justify-between px-8 pb-8 gap-6 z-20 overflow-hidden">
+        
+        <!-- LEFT PANEL: Navigation & States -->
+        <section id="menuPanel" class="w-full md:w-[48%] h-full flex flex-col justify-between items-center py-6 relative transition-all duration-700 ease-in-out transform translate-x-0 bg-white/30 rounded-2xl p-6">
+            
+            <!-- 1. Main Menu State (Logo / Title Branding Always Intact) -->
+            <div id="mainMenuState" class="w-full h-full flex flex-col justify-between transition-all duration-500 opacity-100">
+                <div class="text-center w-full mt-4">
+                    <h1 class="text-4xl md:text-5xl font-black text-rose-800 header-font leading-none tracking-tight drop-shadow-md">
+                        THINGS WE <span class="text-stone-950 block text-3xl md:text-4xl tracking-widest mt-1">SHOW AND TELL</span>
+                    </h1>
+                    <div class="w-32 h-[3px] bg-stone-900 mx-auto mt-4 rounded-full"></div>
+                </div>
+
+                <div class="flex flex-col gap-4 w-full max-w-sm mx-auto my-auto">
+                    <button id="btnEnterRoom" onclick="enterExhibition()" 
+                            onmouseenter="triggerCustomSpeech('finally start the game', 0)" 
+                            onmouseleave="hideSpeechBubble()" 
+                            class="group relative w-full bg-white hover:bg-stone-50 p-5 h-20 sketch-border flex flex-col justify-center transition-all duration-200 transform hover:-translate-y-1 active:translate-y-0 text-stone-900">
+                        <div class="absolute inset-1.5 rounded-sm opacity-0 group-hover:opacity-100 highlight-ink transition-opacity pointer-events-none"></div>
+                        <div class="flex items-center justify-between w-full relative z-10">
+                            <span class="text-2xl font-bold tracking-widest header-font uppercase">ENTER ROOM</span>
+                            <span class="text-stone-400 text-xs code-font font-bold">ACCOUNT / RUNS</span>
+                        </div>
+                    </button>
+
+                    <button id="btnCredits" onclick="viewCredits()" 
+                            onmouseenter="triggerCustomSpeech('so you wanna know about the developers.', 0)" 
+                            onmouseleave="hideSpeechBubble()" 
+                            class="group relative w-full bg-white hover:bg-stone-50 p-5 h-20 sketch-border flex flex-col justify-center transition-all duration-200 transform hover:-translate-y-1 active:translate-y-0 text-stone-900">
+                        <div class="absolute inset-1.5 rounded-sm opacity-0 group-hover:opacity-100 highlight-blue-ink transition-opacity pointer-events-none"></div>
+                        <div class="flex items-center justify-between w-full relative z-10">
+                            <span class="text-2xl font-bold tracking-widest header-font uppercase">CREDITS</span>
+                            <span class="text-stone-400 text-xs code-font font-bold">SELECT * FROM...</span>
+                        </div>
+                    </button>
+
+                    <button id="btnDebug" onclick="viewDebugHub()" 
+                            onmouseenter="triggerCustomSpeech('...strange gibberish ... what is this ?', 0)" 
+                            onmouseleave="hideSpeechBubble()" 
+                            class="group relative w-full bg-white hover:bg-stone-50 p-5 h-20 sketch-border flex flex-col justify-center transition-all duration-200 transform hover:-translate-y-1 active:translate-y-0 text-stone-900">
+                        <div class="absolute inset-1.5 rounded-sm opacity-0 group-hover:opacity-100 highlight-green-ink transition-opacity pointer-events-none"></div>
+                        <div class="flex items-center justify-between w-full relative z-10">
+                            <span class="text-2xl font-bold tracking-widest header-font uppercase">DEBUG PANEL</span>
+                            <span class="text-emerald-700 text-xs code-font font-bold">TOOLS & VAULT</span>
+                        </div>
+                    </button>
+                </div>
+                <div class="h-6"></div>
+            </div>
+
+            <!-- 2. Debug Workspace -->
+            <div id="debugState" class="w-full h-full flex flex-col justify-between hidden opacity-0 transition-all duration-500">
+                <div class="w-full text-left mt-2">
+                    <h2 class="text-3xl font-black text-emerald-800 tracking-wider uppercase header-font">DEBUG WORKSPACE //</h2>
+                    <p class="text-xs text-stone-500 font-bold tracking-wider uppercase">System Diagnostics & Database Atlas</p>
+                </div>
+
+                <div class="w-full my-auto space-y-3">
+                    <div class="bg-white p-3.5 sketch-border flex flex-col gap-2">
+                        <div>
+                            <h4 class="font-bold header-font text-stone-900 text-sm">TYPOGRAPHY PALETTE</h4>
+                            <p class="text-[11px] text-stone-500 code-font">Switch font pairings.</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 pt-0.5">
+                            <button onclick="applyFontPreset('technical')" class="bg-stone-100 hover:bg-stone-200 text-stone-900 px-2 py-1.5 rounded text-xs font-bold border border-stone-400 sketch-border-sm">
+                                [ TECHNICAL ]
+                            </button>
+                            <button onclick="applyFontPreset('blueprint')" class="bg-stone-100 hover:bg-stone-200 text-stone-900 px-2 py-1.5 rounded text-xs font-bold border border-stone-400 sketch-border-sm">
+                                [ BLUEPRINT ]
+                            </button>
+                            <button onclick="applyFontPreset('editorial')" class="bg-stone-100 hover:bg-stone-200 text-stone-900 px-2 py-1.5 rounded text-xs font-bold border border-stone-400 sketch-border-sm">
+                                [ EDITORIAL ]
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-3.5 sketch-border flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold header-font text-stone-900 text-sm">RAW SQL MONITOR</h4>
+                            <p class="text-[11px] text-stone-500 code-font">Toggle transaction inspector.</p>
+                        </div>
+                        <button onclick="toggleSqlConsole()" class="bg-stone-900 hover:bg-stone-800 text-white font-bold px-3 py-1.5 rounded text-xs uppercase header-font">
+                            TOGGLE
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-3.5 sketch-border flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold header-font text-stone-900 text-sm">CARD INVENTORY ATLAS</h4>
+                            <p class="text-[11px] text-stone-500 code-font">Open live MySQL cards catalog (40 items).</p>
+                        </div>
+                        <button onclick="goToInventory()" class="bg-rose-800 hover:bg-rose-700 text-white font-bold px-3 py-1.5 rounded text-xs uppercase header-font">
+                            LAUNCH ↗
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center text-[11px] text-stone-400 font-bold">
+                    <span>* Press [ ~ ] to toggle the SQL monitor anytime.</span>
+                </div>
+            </div>
+
+            <!-- 3. Authentication View -->
+            <div id="signinState" class="w-full h-full flex flex-col justify-between hidden opacity-0 transition-all duration-500">
+                <div class="w-full text-left mt-2">
+                    <h2 class="text-2xl font-black text-stone-900 tracking-wider uppercase header-font">SIGN_THE_LEDGER //</h2>
+                    <p class="text-xs text-rose-800 font-bold tracking-wider uppercase">Student Desk Credentials</p>
+                </div>
+
+                <div class="w-full max-w-sm mx-auto my-auto bg-white p-5 sketch-border space-y-3">
+                    <label class="block">
+                        <span class="text-xs font-bold uppercase text-stone-500 tracking-widest block mb-1">Email Address</span>
+                        <input type="email" id="emailInput" placeholder="student@cursed.edu" class="w-full bg-stone-50 text-stone-900 font-bold px-3 py-2 border-2 border-stone-950 focus:outline-none focus:bg-white text-xs sketch-border-sm">
+                    </label>
+
+                    <label class="block">
+                        <span class="text-xs font-bold uppercase text-stone-500 tracking-widest block mb-1">Passcode</span>
+                        <input type="password" id="passwordInput" placeholder="••••••••" class="w-full bg-stone-50 text-stone-900 font-bold px-3 py-2 border-2 border-stone-950 focus:outline-none focus:bg-white text-xs sketch-border-sm">
+                    </label>
+
+                    <div class="flex gap-2 pt-2">
+                        <button onclick="handleAuth('login')" class="w-1/2 bg-stone-900 hover:bg-stone-800 text-white font-bold py-2.5 rounded text-xs tracking-wider transition-all uppercase header-font">
+                            LOGIN
+                        </button>
+                        <button onclick="handleAuth('signup')" class="w-1/2 bg-rose-800 hover:bg-rose-700 text-white font-bold py-2.5 rounded text-xs tracking-wider transition-all uppercase header-font">
+                            SIGN UP
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center text-[11px] text-stone-400 font-bold">
+                    <span>* Raw SQL queries execute against ACCOUNT table.</span>
+                </div>
+            </div>
+
+            <!-- 4. Profile Run Slots View -->
+            <div id="selectRunState" class="w-full h-full flex flex-col justify-between hidden opacity-0 transition-all duration-500">
+                <div class="w-full text-left mt-2 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-black text-stone-900 tracking-wider uppercase header-font">SELECT RUN SLOT //</h2>
+                        <p id="accountEmailBadge" class="text-xs text-amber-800 font-bold tracking-wider code-font">ACCOUNT: user@example.com</p>
+                    </div>
+                    <button onclick="logoutUser()" class="text-xs font-bold text-rose-700 border border-rose-700 px-2 py-1 rounded header-font">[ LOGOUT ]</button>
+                </div>
+
+                <div class="w-full my-auto space-y-3">
+                    <div id="runSlotsContainer" class="max-h-48 overflow-y-auto space-y-2 pr-1"></div>
+
+                    <div class="bg-white p-3 sketch-border flex gap-2 items-center">
+                        <input type="text" id="newRunNameInput" placeholder="New Run Name (e.g. Night 2)" class="flex-1 bg-stone-50 text-stone-900 font-bold px-3 py-1.5 border-2 border-stone-950 focus:outline-none text-xs sketch-border-sm">
+                        <button onclick="createRunSlot()" class="bg-stone-900 hover:bg-stone-800 text-white font-bold px-3 py-1.5 rounded text-xs uppercase header-font">
+                            + NEW DESK
+                        </button>
+                    </div>
+                </div>
+
+                <div class="text-center text-[11px] text-stone-400 font-bold">
+                    <span>* 1 Account can own multiple Profile run slots in MySQL.</span>
+                </div>
+            </div>
+
+            <!-- 5. Merchant Shop View -->
+            <div id="merchantState" class="w-full h-full flex flex-col justify-between hidden opacity-0 transition-all duration-500">
+                <div class="w-full text-left mt-2 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-2xl font-black text-amber-900 tracking-wider uppercase header-font">HALLWAY MERCHANT //</h2>
+                        <p id="merchantCrayonBadge" class="text-xs text-stone-600 font-bold code-font">CRAYON BALANCE: 50 🖍️</p>
+                    </div>
+                    <button onclick="closeMerchant()" class="text-xs font-bold text-stone-900 border-2 border-stone-950 px-3 py-1 sketch-border-sm header-font uppercase bg-white hover:bg-stone-100 cursor-pointer">
+                        [ EXIT SHOP ]
+                    </button>
+                </div>
+
+                <div class="bg-amber-50 p-3 sketch-border my-2 text-xs font-bold code-font text-stone-800 flex items-center gap-2">
+                    <span>💬</span>
+                    <span id="merchantDialogueText">"Got spare Crayons under your desk? Trade 'em for extra monsters and spells!"</span>
+                </div>
+
+                <!-- Shop Cards Grid -->
+                <div id="merchantCardGrid" class="w-full my-auto max-h-60 overflow-y-auto grid grid-cols-2 md:grid-cols-3 gap-3 pr-1">
+                    <!-- Cards injected dynamically via JS -->
+                </div>
+
+                <div class="text-center text-[11px] text-stone-400 font-bold">
+                    <span>* Purchased cards update deck pool for Profile ID across all sessions.</span>
+                </div>
+            </div>
+
+            <!-- 6. Credits View -->
+            <div id="creditsState" class="w-full h-full flex flex-col justify-between hidden opacity-0 transition-all duration-500">
+                <div class="w-full text-left mt-2">
+                    <h2 class="text-3xl font-black text-rose-800 tracking-wider uppercase header-font">CREDITS</h2>
+                    <p class="text-xs text-stone-500 font-bold tracking-wider uppercase">The minds behind "Things we Show and Tell"</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 w-full my-auto py-2">
+                    <div class="creator-card opacity-0 translate-y-6 bg-white p-5 sketch-border border-stone-900 shadow-sm relative transition-all duration-500 flex flex-col justify-between text-center min-h-[160px]">
+                        <div>
+                            <span class="text-[9px] text-rose-800 font-extrabold tracking-widest block mb-1">CREATOR_01 //</span>
+                            <h3 class="text-lg font-bold text-stone-900 header-font uppercase tracking-wide leading-tight">AHNAF ASHIQUE ADI</h3>
+                        </div>
+                        <div class="border-t border-dashed border-stone-200 my-3"></div>
+                        <div class="code-font text-stone-500 text-xs">
+                            <span class="block font-black text-stone-800 text-sm">ID: 24101165</span>
+                            <span class="text-[10px] tracking-wider uppercase">MEMBER_A</span>
+                        </div>
+                    </div>
+                    <div class="creator-card opacity-0 translate-y-6 bg-white p-5 sketch-border border-stone-900 shadow-sm relative transition-all duration-500 flex flex-col justify-between text-center min-h-[160px]">
+                        <div>
+                            <span class="text-[9px] text-rose-800 font-extrabold tracking-widest block mb-1">CREATOR_02 //</span>
+                            <h3 class="text-lg font-bold text-stone-900 header-font uppercase tracking-wide leading-tight">MOHAMMAD ARAFAT</h3>
+                        </div>
+                        <div class="border-t border-dashed border-stone-200 my-3"></div>
+                        <div class="code-font text-stone-500 text-xs">
+                            <span class="block font-black text-stone-800 text-sm">ID: 24301051</span>
+                            <span class="text-[10px] tracking-wider uppercase">MEMBER_B</span>
+                        </div>
+                    </div>
+                    <div class="creator-card opacity-0 translate-y-6 bg-white p-5 sketch-border border-stone-900 shadow-sm relative transition-all duration-500 flex flex-col justify-between text-center min-h-[160px]">
+                        <div>
+                            <span class="text-[9px] text-rose-800 font-extrabold tracking-widest block mb-1">CREATOR_03 //</span>
+                            <h3 class="text-lg font-bold text-stone-900 header-font uppercase tracking-wide leading-tight">MAHDIN SAMIUL HAQUE</h3>
+                        </div>
+                        <div class="border-t border-dashed border-stone-200 my-3"></div>
+                        <div class="code-font text-stone-500 text-xs">
+                            <span class="block font-black text-stone-800 text-sm">ID: 23301435</span>
+                            <span class="text-[10px] tracking-wider uppercase">MEMBER_C</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-left bg-stone-100 p-3 rounded-xl border border-stone-200">
+                    <span class="text-[10px] text-stone-500 font-black tracking-wider block code-font">CREATOR_SQL_LOOKUP //</span>
+                    <span class="text-xs font-black text-stone-800 tracking-wide uppercase code-font">SELECT * FROM creators ORDER BY creator_id ASC;</span>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- MIDDLE DASHED DIVIDER -->
+        <div id="verticalDivider" class="hidden md:block w-[4px] h-[80%] my-auto border-l-4 border-dashed border-stone-800/30 z-30 transition-all duration-700 ease-in-out"></div>
+
+        <!-- RIGHT SCREEN: 3D Character Sandbox -->
+        <section id="exhibitionShowcase" class="w-full md:w-[48%] h-full relative flex flex-col justify-between overflow-hidden bg-white/40 rounded-2xl p-4 sketch-border transition-all duration-700 ease-in-out transform origin-right">
+            <div id="canvasContainer" class="absolute inset-0 z-10 w-full h-full">
+                <canvas id="threeCanvas" class="w-full h-full block"></canvas>
+            </div>
+            <div class="absolute top-[38%] left-[50%] -translate-x-[150px] -translate-y-[135px] pointer-events-none z-30">
+                <div id="speechBubble" class="opacity-0 scale-90 transition-all duration-300 max-w-[180px] md:max-w-[210px] bg-white text-stone-900 font-bold px-4 py-2.5 text-sm border-2 border-stone-950 shadow-[3px_3px_0px_rgba(28,25,23,0.15)] rounded-[20px_12px_25px_8px/12px_25px_8px_20px] pointer-events-auto">
+                    <span id="speechText">...</span>
+                    <div class="absolute bottom-[-10px] right-[30px] w-0 h-0 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[10px] border-t-stone-950"></div>
+                    <div class="absolute bottom-[-7px] right-[31px] w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-t-[9px] border-t-white"></div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SCRIPTS -->
+    <script>
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playMarkerSqueak(pitchStart, pitchEnd, duration = 0.14, volume = 0.04) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc.type = 'sawtooth'; 
+                osc.frequency.setValueAtTime(pitchStart * 0.7, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(pitchEnd * 0.7, audioCtx.currentTime + duration);
+                
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mouseenter', () => {
+                playMarkerSqueak(600, 900, 0.07, 0.02);
+            });
+        });
+
+        // --- UNIVERSAL LOADER ---
+        function executeWithLoader(options, actionCallback) {
+            const loader = document.getElementById('sceneLoader');
+            const bar = document.getElementById('loaderProgressBar');
+            const title = document.getElementById('loaderTitle');
+            const subtext = document.getElementById('loaderSubtext');
+            const sqlLog = document.getElementById('loaderQueryLog');
+            const percent = document.getElementById('loaderPercent');
+
+            title.innerText = options.title || "PROCESSING...";
+            bar.style.width = '0%';
+            percent.innerText = '0%';
+
+            loader.classList.remove('opacity-0', 'pointer-events-none');
+            loader.classList.add('opacity-100');
+
+            const steps = options.steps || [
+                { pct: 30, msg: "Parsing query structure...", sql: options.sql || "SELECT 1;" },
+                { pct: 70, msg: "Compiling record states...", sql: options.sql || "STATUS: RUNNING" },
+                { pct: 100, msg: "Complete!", sql: "STATUS: OK" }
+            ];
+
+            let stepIdx = 0;
+            const runStep = () => {
+                if (stepIdx >= steps.length) {
+                    setTimeout(() => {
+                        loader.classList.remove('opacity-100');
+                        loader.classList.add('opacity-0', 'pointer-events-none');
+                        if (actionCallback) actionCallback();
+                    }, 200);
+                    return;
+                }
+
+                const step = steps[stepIdx];
+                bar.style.width = step.pct + '%';
+                percent.innerText = step.pct + '%';
+                subtext.innerText = step.msg;
+                sqlLog.innerText = step.sql;
+
+                playMarkerSqueak(400 + (stepIdx * 120), 700 + (stepIdx * 140), 0.08, 0.03);
+
+                stepIdx++;
+                setTimeout(runStep, options.stepDelay || 140);
+            };
+
+            setTimeout(runStep, 80);
+        }
+
+        // --- NAVIGATION HANDLERS ---
+        function goToInventory() {
+            playMarkerSqueak(350, 1100, 0.25, 0.06);
+            executeWithLoader({
+                title: "SKETCHING THE INVENTORY...",
+                steps: [
+                    { pct: 15, msg: "Sharpening 2B pencil lead...", sql: "SELECT * FROM CARD;" },
+                    { pct: 38, msg: "Drafting monster health & attack contours...", sql: "SELECT * FROM MONSTER_CARD;" },
+                    { pct: 64, msg: "Inking spell descriptions & effect nodes...", sql: "SELECT * FROM SPELL_CARD;" },
+                    { pct: 88, msg: "Applying cross-hatch shading...", sql: "ORDER BY Card_ID ASC;" },
+                    { pct: 100, msg: "Opening binder desk vault!", sql: "STATUS: READY." }
+                ],
+                stepDelay: 180
+            }, () => {
+                window.location.href = 'inventory.html';
+            });
+        }
+
+        function enterExhibition() {
+            playMarkerSqueak(400, 1200, 0.25, 0.06);
+            executeWithLoader({
+                title: "PREPARING DESK LEDGER...",
+                steps: [
+                    { pct: 25, msg: "Opening student register book...", sql: "SELECT * FROM ACCOUNT;" },
+                    { pct: 60, msg: "Calibrating room lighting...", sql: "SET ENVIRONMENT_LIGHT = ACTIVE;" },
+                    { pct: 100, msg: "Entering desk area...", sql: "AUTHENTICATION READY." }
+                ],
+                stepDelay: 140
+            }, () => {
+                if (currentAccount) {
+                    fadePanelState('mainMenuState', 'selectRunState');
+                    currentScreenMode = 'selectRunState';
+                } else {
+                    fadePanelState('mainMenuState', 'signinState');
+                    currentScreenMode = 'signin';
+                }
+                const backBtn = document.getElementById('backToMenuBtn');
+                backBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-x-[-20px]');
+
+                targetCamPos.set(0, 0, 5.0);
+                targetCamLookAt.set(0, 0, 0);
+            });
+        }
+
+        function viewCredits() {
+            playMarkerSqueak(500, 1100, 0.24, 0.06);
+            executeWithLoader({
+                title: "RETRIEVING ARCHIVAL CREDITS...",
+                steps: [
+                    { pct: 35, msg: "Fetching system author ledger...", sql: "SELECT * FROM creators;" },
+                    { pct: 75, msg: "Compiling contributor citations...", sql: "ORDER BY creator_id ASC;" },
+                    { pct: 100, msg: "Manifest ready.", sql: "STATUS: OK." }
+                ],
+                stepDelay: 130
+            }, () => {
+                const previousMode = currentScreenMode;
+                currentScreenMode = 'credits';
+
+                writeToSqlTerminal("SELECT creator_id, name, student_id, role FROM creators ORDER BY creator_id ASC;");
+
+                const showcase = document.getElementById('exhibitionShowcase');
+                const divider = document.getElementById('verticalDivider');
+                const menuPanel = document.getElementById('menuPanel');
+
+                showcase.classList.add('opacity-0', 'scale-95', 'translate-x-12', 'pointer-events-none');
+                showcase.style.width = '0px';
+                showcase.style.padding = '0px';
+                showcase.style.border = 'none';
+
+                divider.classList.add('opacity-0', 'scale-y-75');
+
+                menuPanel.classList.remove('md:w-[48%]');
+                menuPanel.classList.add('md:w-[80%]', 'max-w-4xl', 'mx-auto');
+
+                const outId = previousMode === 'signin' ? 'signinState' : (previousMode === 'selectRunState' ? 'selectRunState' : (previousMode === 'debug' ? 'debugState' : 'mainMenuState'));
+                fadePanelState(outId, 'creditsState');
+
+                const cards = document.querySelectorAll('.creator-card');
+                cards.forEach((card, i) => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(24px)';
+                    setTimeout(() => {
+                        card.style.transition = 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 350 + (i * 120));
+                });
+
+                const backBtn = document.getElementById('backToMenuBtn');
+                backBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-x-[-20px]');
+
+                targetCamPos.set(-2.0, 1.0, 4.5);
+                targetCamLookAt.set(0, 0, 0);
+            });
+        }
+
+        function viewDebugHub() {
+            playMarkerSqueak(600, 1200, 0.22, 0.05);
+            fadePanelState('mainMenuState', 'debugState');
+            currentScreenMode = 'debug';
+
+            const backBtn = document.getElementById('backToMenuBtn');
+            backBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-x-[-20px]');
+        }
+
+        let consoleOpen = false;
+        function toggleSqlConsole() {
+            const consoleEl = document.getElementById('sqlTerminal');
+            playMarkerSqueak(600, consoleOpen ? 350 : 950, 0.12, 0.04);
+
+            if (consoleOpen) {
+                consoleEl.classList.add('translate-x-[450px]', 'opacity-0', 'pointer-events-none');
+                consoleEl.classList.remove('translate-x-0', 'opacity-100');
+            } else {
+                consoleEl.classList.remove('translate-x-[450px]', 'opacity-0', 'pointer-events-none');
+                consoleEl.classList.add('translate-x-0', 'opacity-100');
+            }
+            consoleOpen = !consoleOpen;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '`' || e.key === '~') {
+                const active = document.activeElement;
+                if (active !== document.getElementById('newRunNameInput') && 
+                    active !== document.getElementById('emailInput') && 
+                    active !== document.getElementById('passwordInput')) {
+                    e.preventDefault();
+                    toggleSqlConsole();
+                }
+            }
+        });
+
+        function writeToSqlTerminal(query, isSuccess = true) {
+            const consoleBox = document.getElementById('sqlConsoleLog');
+            const timestamp = new Date().toLocaleTimeString();
+            let queryLine = `<div class="text-amber-400 font-bold mt-2">[${timestamp}] EXECUTED:</div>`;
+            queryLine += `<div class="text-stone-100 font-bold pl-2 break-all">${query}</div>`;
+            queryLine += isSuccess ? `<div class="text-emerald-500 text-[10px] pl-2 font-mono">SUCCESS: Query ok.</div>` : `<div class="text-rose-500 text-[10px] pl-2 font-mono">ERROR: Execution failed.</div>`;
+            consoleBox.innerHTML += queryLine;
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        // --- AUTH & RUN PIPELINE ---
+        let currentAccount = null;
+        let accountProfiles = [];
+        let currentScreenMode = 'menu';
+
+        async function handleAuth(mode) {
+            const email = document.getElementById('emailInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+
+            if (!email || !password) {
+                alert("Please enter both Email and Password.");
+                return;
+            }
+
+            const endpoint = mode === 'signup' ? 'signup.php' : 'login.php';
+            const queryLog = mode === 'signup'
+                ? `INSERT INTO ACCOUNT (Email) VALUES ('${email}');`
+                : `SELECT * FROM ACCOUNT A WHERE A.Email = '${email}';`;
+
+            writeToSqlTerminal(queryLog);
+
+            executeWithLoader({
+                title: mode === 'signup' ? "CREATING NEW ACCOUNT..." : "VERIFYING CREDENTIALS...",
+                steps: [
+                    { pct: 35, msg: "Hashing & checking credentials...", sql: queryLog },
+                    { pct: 75, msg: "Querying PROFILE run desks...", sql: "SELECT * FROM PROFILE WHERE Account_ID = :id;" },
+                    { pct: 100, msg: "Authentication verified.", sql: "HTTP/1.1 200 OK" }
+                ],
+                stepDelay: 150
+            }, async () => {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        writeToSqlTerminal(`API_SUCCESS: ${result.message}`, true);
+                        playMarkerSqueak(800, 1600, 0.3, 0.08);
+
+                        if (mode === 'signup') {
+                            alert("Account created successfully! Click LOGIN to continue.");
+                            triggerCustomSpeech("Desk registered! Now click LOGIN.", 3500);
+                        } else if (mode === 'login') {
+                            currentAccount = result.account;
+                            accountProfiles = result.profiles || [];
+                            sessionStorage.setItem('logged_account_id', currentAccount.Account_ID);
+                            
+                            document.getElementById('accountEmailBadge').innerText = `ACCOUNT: ${currentAccount.Email}`;
+                            renderRunSlots();
+
+                            fadePanelState('signinState', 'selectRunState');
+                            currentScreenMode = 'selectRunState';
+                            triggerCustomSpeech(`Welcome back! Choose a run slot.`, 3500);
+                        }
+                    } else {
+                        writeToSqlTerminal(`API_ERROR: ${result.message}`, false);
+                        playMarkerSqueak(200, 100, 0.2, 0.08);
+                        alert("Error: " + result.message);
+                    }
+                } catch (err) {
+                    writeToSqlTerminal(`CONNECTION_FAILED: Ensure server is running.`, false);
+                }
+            });
+        }
+
+        function renderRunSlots() {
+            const container = document.getElementById('runSlotsContainer');
+            container.innerHTML = '';
+
+            if (accountProfiles.length === 0) {
+                container.innerHTML = `<div class="text-center text-xs text-stone-500 py-4 code-font">No run slots found. Create a new desk below!</div>`;
+                return;
+            }
+
+            accountProfiles.forEach(prof => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-3 sketch-border flex justify-between items-center hover:bg-stone-50 transition-all";
+                card.innerHTML = `
+                    <div class="text-left">
+                        <h4 class="font-bold header-font text-stone-900 text-sm uppercase">${prof.Profile_Name}</h4>
+                        <div class="text-[10px] code-font text-stone-500">Crayons: ${prof.Crayon_Balance || 50} | Score: ${prof.Profile_HighScore || 0}</div>
+                    </div>
+                    <div class="flex gap-1.5">
+                        <button onclick='openMerchant(${prof.Profile_ID})' class="bg-amber-800 hover:bg-amber-700 text-white font-bold px-2.5 py-1 rounded text-xs header-font uppercase cursor-pointer">
+                            SHOP 🛒
+                        </button>
+                        <button onclick='launchProfile(${JSON.stringify(prof)})' class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-3 py-1 rounded text-xs header-font uppercase cursor-pointer">
+                            PLAY RUN ▶
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function createRunSlot() {
+            const profileName = document.getElementById('newRunNameInput').value.trim();
+            if (!profileName) {
+                alert("Please enter a Run Name.");
+                return;
+            }
+
+            const queryLog = `INSERT INTO PROFILE (Profile_Name, Account_ID) VALUES ('${profileName}', ${currentAccount.Account_ID});`;
+            writeToSqlTerminal(queryLog);
+
+            executeWithLoader({
+                title: "INITIALIZING RUN DESK...",
+                steps: [
+                    { pct: 40, msg: "Allocating 50 crayons to profile...", sql: queryLog },
+                    { pct: 80, msg: "Binding to active Account ID...", sql: "SET Profile_HighScore = 0;" },
+                    { pct: 100, msg: "Slot initialized!", sql: "INSERT SUCCESSFUL" }
+                ],
+                stepDelay: 140
+            }, async () => {
+                try {
+                    const response = await fetch('create_profile.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ account_id: currentAccount.Account_ID, profile_name: profileName })
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        writeToSqlTerminal(`API_SUCCESS: ${result.message}`, true);
+                        playMarkerSqueak(800, 1600, 0.3, 0.08);
+                        accountProfiles.push(result.profile);
+                        renderRunSlots();
+                        document.getElementById('newRunNameInput').value = '';
+                        triggerCustomSpeech(`New desk created for ${profileName}!`, 3000);
+                    } else {
+                        alert("Error: " + result.message);
+                    }
+                } catch (err) {}
+            });
+        }
+
+        function launchProfile(profile) {
+            playMarkerSqueak(800, 1600, 0.3, 0.08);
+            executeWithLoader({
+                title: `ENTERING DESK [ ${profile.Profile_Name.toUpperCase()} ]`,
+                steps: [
+                    { pct: 25, msg: "Retrieving student card registry...", sql: `SELECT * FROM PROFILE WHERE Profile_ID = ${profile.Profile_ID};` },
+                    { pct: 60, msg: "Setting desk card slots...", sql: "SELECT * FROM CARD ORDER BY Card_ID ASC;" },
+                    { pct: 100, msg: "Entering classroom orientation...", sql: "HTTP/1.1 200 OK" }
+                ],
+                stepDelay: 130
+            }, () => {
+                const accId = currentAccount ? currentAccount.Account_ID : (sessionStorage.getItem('logged_account_id') || 1);
+                window.location.href = `tutorial.html?profile_id=${profile.Profile_ID}&run=${encodeURIComponent(profile.Profile_Name)}&account_id=${accId}`;
+            });
+        }
+
+        // --- MERCHANT HANDLERS ---
+        async function openMerchant(profileId) {
+            writeToSqlTerminal(`SELECT * FROM MERCHANT WHERE Level_ID = 1; SELECT * FROM VISITS_SHOP WHERE Profile_ID = ${profileId};`);
+            try {
+                const res = await fetch(`merchant.php?profile_id=${profileId}`);
+                const data = await res.json();
+                
+                if (!data.success) return alert(data.message);
+
+                document.getElementById('merchantCrayonBadge').innerText = `CRAYON BALANCE: ${data.profile.Crayon_Balance} 🖍️`;
+                document.getElementById('merchantDialogueText').innerText = `"${data.dialogue}"`;
+
+                const profObj = accountProfiles.find(p => p.Profile_ID == profileId);
+                if (profObj) profObj.Crayon_Balance = data.profile.Crayon_Balance;
+
+                const grid = document.getElementById('merchantCardGrid');
+                grid.innerHTML = '';
+
+                data.cards.forEach(card => {
+                    const cardEl = document.createElement('div');
+                    cardEl.className = "bg-white p-2.5 sketch-border flex flex-col justify-between text-left relative";
+                    cardEl.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-black header-font uppercase truncate">${card.Card_Name}</span>
+                                <span class="text-[9px] code-font font-bold ${card.card_type === 'monster' ? 'text-rose-700' : 'text-blue-700'}">[${card.card_type}]</span>
+                            </div>
+                            <p class="text-[10px] code-font text-stone-500 mb-2">
+                                ${card.card_type === 'monster' ? `HP:${card.Health} ATK:${card.Attack}` : card.SpellEffect_Desc.substring(0, 35) + '...'}
+                            </p>
+                        </div>
+                        ${card.is_owned 
+                            ? `<button disabled class="w-full bg-stone-200 text-stone-500 font-bold py-1 rounded text-[10px] uppercase header-font">OWNED</button>`
+                            : `<button onclick="buyMerchantCard(${data.profile.Profile_ID}, ${card.Card_ID})" class="w-full bg-amber-800 hover:bg-amber-700 text-white font-bold py-1 rounded text-[10px] uppercase header-font cursor-pointer">BUY (25 🖍️)</button>`
+                        }
+                    `;
+                    grid.appendChild(cardEl);
+                });
+
+                currentScreenMode = 'merchant';
+                fadePanelState('selectRunState', 'merchantState');
+            } catch (e) {
+                alert("Could not connect to Hallway Merchant.");
+            }
+        }
+
+        async function buyMerchantCard(profileId, cardId) {
+            writeToSqlTerminal(`INSERT INTO OWN_CARDS (Profile_ID, Card_ID) VALUES (${profileId}, ${cardId}); UPDATE PROFILE SET Crayon_Balance = Crayon_Balance - 25 WHERE Profile_ID = ${profileId};`);
+            try {
+                const res = await fetch('buy_card.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ profile_id: profileId, card_id: cardId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    playMarkerSqueak(600, 1400, 0.2, 0.05);
+                    openMerchant(profileId);
+                } else {
+                    alert(data.message);
+                }
+            } catch(e) {}
+        }
+
+        function closeMerchant() {
+            currentScreenMode = 'selectRunState';
+            renderRunSlots();
+            fadePanelState('merchantState', 'selectRunState');
+        }
+
+        function logoutUser() {
+            playMarkerSqueak(1000, 450, 0.22, 0.06);
+            executeWithLoader({
+                title: "CLOSING DESK SESSION...",
+                steps: [
+                    { pct: 40, msg: "Committing state records to database...", sql: "COMMIT;" },
+                    { pct: 100, msg: "Session ended cleanly.", sql: "DISCONNECTED." }
+                ],
+                stepDelay: 120
+            }, () => {
+                currentAccount = null;
+                accountProfiles = [];
+                sessionStorage.removeItem('logged_account_id');
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                fadePanelState('selectRunState', 'mainMenuState');
+                currentScreenMode = 'menu';
+                
+                const backBtn = document.getElementById('backToMenuBtn');
+                backBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-x-[-20px]');
+                writeToSqlTerminal("SESSION_CLOSED: User logged out.");
+            });
+        }
+
+        function returnToMenu() {
+            playMarkerSqueak(1000, 450, 0.22, 0.06);
+            
+            let targetFadeOut = 'signinState';
+            if (currentScreenMode === 'selectRunState') targetFadeOut = 'selectRunState';
+            if (currentScreenMode === 'merchant') targetFadeOut = 'merchantState';
+            if (currentScreenMode === 'credits') targetFadeOut = 'creditsState';
+            if (currentScreenMode === 'debug') targetFadeOut = 'debugState';
+
+            if (currentScreenMode === 'credits') {
+                const showcase = document.getElementById('exhibitionShowcase');
+                const divider = document.getElementById('verticalDivider');
+                const menuPanel = document.getElementById('menuPanel');
+
+                const cards = document.querySelectorAll('.creator-card');
+                cards.forEach(card => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(24px)';
+                });
+
+                showcase.classList.remove('opacity-0', 'scale-95', 'translate-x-12', 'pointer-events-none');
+                showcase.style.width = '';
+                showcase.style.padding = '';
+                showcase.style.border = '';
+
+                divider.classList.remove('opacity-0', 'scale-y-75');
+                
+                menuPanel.classList.add('md:w-[48%]');
+                menuPanel.classList.remove('md:w-[80%]', 'max-w-4xl', 'mx-auto');
+            }
+
+            currentScreenMode = 'menu';
+            fadePanelState(targetFadeOut, 'mainMenuState');
+
+            const backBtn = document.getElementById('backToMenuBtn');
+            backBtn.classList.add('opacity-0', 'pointer-events-none', 'translate-x-[-20px]');
+
+            writeToSqlTerminal("RESET SESSION WORKSPACE;");
+
+            targetCamPos.set(0, 0, 4.2);
+            targetCamLookAt.set(0, 0, 0);
+        }
+
+        function fadePanelState(outId, inId) {
+            const outEl = document.getElementById(outId);
+            const inEl = document.getElementById(inId);
+
+            outEl.classList.add('opacity-0');
+            setTimeout(() => {
+                outEl.classList.add('hidden');
+                inEl.classList.remove('hidden');
+                inEl.clientHeight;
+                inEl.classList.remove('opacity-0');
+            }, 300);
+        }
+
+        // --- SPEECH BUBBLE ---
+        const phrases = ["will you stop staring"];
+        const bubble = document.getElementById('speechBubble');
+        const speechText = document.getElementById('speechText');
+        let bubbleActive = false;
+        let speechJitter = false;
+        let speechTimeout = null;
+
+        function triggerCustomSpeech(text, duration = 1000) {
+            if (speechTimeout) clearTimeout(speechTimeout);
+            bubbleActive = true;
+            speechText.innerText = text;
+            
+            writeToSqlTerminal(`SELECT response FROM cognitive_reactions WHERE value = '${text.toUpperCase().replace(/[^A-Z0-9]/g, "_")}';`);
+            playMarkerSqueak(850, 420, 0.15, 0.035);
+
+            bubble.classList.remove('opacity-0', 'scale-90', 'translate-y-2', 'pointer-events-none');
+            bubble.classList.add('opacity-100', 'scale-100', 'translate-y-0');
+            speechJitter = true;
+
+            if (duration > 0) {
+                speechTimeout = setTimeout(() => {
+                    hideSpeechBubble();
+                }, duration);
+            }
+        }
+
+        function hideSpeechBubble() {
+            if (speechTimeout) clearTimeout(speechTimeout);
+            bubble.classList.add('opacity-0', 'scale-90', 'translate-y-2', 'pointer-events-none');
+            bubble.classList.remove('opacity-100', 'scale-100', 'translate-y-0');
+            speechJitter = false;
+            bubble.style.transform = '';
+            setTimeout(() => { bubbleActive = false; }, 2000);
+        }
+
+        function triggerSpeech() {
+            const chosenText = phrases[Math.floor(Math.random() * phrases.length)];
+            triggerCustomSpeech(chosenText, 4500);
+        }
+
+        setInterval(() => {
+            if (!bubbleActive && Math.random() < 0.20) triggerSpeech();
+        }, 15000);
+
+        // --- THREE.JS 3D PORTRAIT VIEWPORT ---
+        let scene, camera, renderer, doodleFaceGroup, headGroup, headOutline, torsoOutline, frameLine, leftEye, rightEye;
+        let targetEyeScale = 1.5, currentEyeScale = 1.5, eyeSpinSpeed = 0.7;
+        let mouseX = 0, mouseY = 0;
+        let targetCamPos = new THREE.Vector3(0, 0, 4.2);
+        let targetCamLookAt = new THREE.Vector3(0, 0, 0);
+        let currentCamPos = new THREE.Vector3(0, 0, 4.2);
+        let currentCamLookAt = new THREE.Vector3(0, 0, 0);
+
+        function initThreeJS() {
+            if (typeof THREE === 'undefined') return;
+
+            const canvasContainer = document.getElementById('canvasContainer');
+            const canvas = document.getElementById('threeCanvas');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf6f5f2);
+
+            camera = new THREE.PerspectiveCamera(45, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 100);
+            camera.position.copy(currentCamPos);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            window.addEventListener('resize', () => {
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            });
+
+            const ambientLight = new THREE.AmbientLight(0xfffbf9, 1.2);
+            scene.add(ambientLight);
+
+            doodleFaceGroup = new THREE.Group();
+            scene.add(doodleFaceGroup);
+
+            const framePoints = [
+                new THREE.Vector3(-1.6, -1.6, 0),
+                new THREE.Vector3(1.6, -1.6, 0),
+                new THREE.Vector3(1.6, 1.6, 0),
+                new THREE.Vector3(-1.6, 1.6, 0),
+                new THREE.Vector3(-1.6, -1.6, 0)
+            ];
+            const frameGeo = new THREE.BufferGeometry().setFromPoints(framePoints);
+            frameLine = new THREE.Line(frameGeo, new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 2.5 }));
+            frameLine.position.z = -0.2;
+            doodleFaceGroup.add(frameLine);
+
+            headGroup = new THREE.Group();
+            headGroup.position.set(0, 0.25, 0);
+            doodleFaceGroup.add(headGroup);
+
+            const leftHalfGeo = new THREE.CircleGeometry(0.75, 32, Math.PI / 2, Math.PI);
+            const leftHalfMesh = new THREE.Mesh(leftHalfGeo, new THREE.MeshBasicMaterial({ color: 0xfbfbf9, side: THREE.DoubleSide }));
+            leftHalfMesh.position.z = -0.05;
+            headGroup.add(leftHalfMesh);
+
+            const rightHalfGeo = new THREE.CircleGeometry(0.75, 32, -Math.PI / 2, Math.PI);
+            const rightHalfMesh = new THREE.Mesh(rightHalfGeo, new THREE.MeshBasicMaterial({ color: 0x1c1917, side: THREE.DoubleSide }));
+            rightHalfMesh.position.z = -0.05;
+            headGroup.add(rightHalfMesh);
+
+            const points = [];
+            for (let y = 0.7; y >= -0.7; y -= 0.06) {
+                const maxX = Math.sqrt(Math.max(0, 0.73 * 0.73 - y * y));
+                points.push(new THREE.Vector3(0, y, 0));
+                points.push(new THREE.Vector3(maxX * 0.9, y - 0.03, 0));
+                points.push(new THREE.Vector3(0, y - 0.05, 0));
+            }
+            const scribbleShed = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color: 0x2e2a27, linewidth: 2 }));
+            scribbleShed.position.z = -0.01;
+            headGroup.add(scribbleShed);
+
+            const splitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.75, 0), new THREE.Vector3(0, -0.75, 0)]), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 3 }));
+            splitLine.position.z = -0.02;
+            headGroup.add(splitLine);
+
+            headOutline = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 3 }));
+            headOutline.position.z = 0.05;
+            headGroup.add(headOutline);
+
+            function createSpiralGeometry(turns = 2.4, maxRadius = 0.12) {
+                const spiralPoints = [];
+                const segments = 60;
+                for (let i = 0; i <= segments; i++) {
+                    const pct = i / segments;
+                    const theta = pct * (turns * Math.PI * 2);
+                    const r = pct * maxRadius;
+                    spiralPoints.push(new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), 0));
+                }
+                return new THREE.BufferGeometry().setFromPoints(spiralPoints);
+            }
+
+            leftEye = new THREE.Line(createSpiralGeometry(2.4, 0.13), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 4 }));
+            leftEye.position.set(-0.35, 0.08, 0.1);
+            headGroup.add(leftEye);
+
+            rightEye = new THREE.Line(createSpiralGeometry(2.6, 0.13), new THREE.LineBasicMaterial({ color: 0xbe123c, linewidth: 4 }));
+            rightEye.position.set(0.35, 0.08, 0.1);
+            headGroup.add(rightEye);
+
+            const torsoShape = new THREE.Shape();
+            torsoShape.moveTo(-1.2, -1.6);
+            torsoShape.quadraticCurveTo(0, -0.55, 1.2, -1.6);
+            torsoShape.lineTo(-1.2, -1.6);
+
+            const torsoMesh = new THREE.Mesh(new THREE.ShapeGeometry(torsoShape), new THREE.MeshBasicMaterial({ color: 0xf3f2ee, side: THREE.DoubleSide }));
+            torsoMesh.position.z = -0.1;
+            doodleFaceGroup.add(torsoMesh);
+
+            torsoOutline = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 3 }));
+            torsoOutline.position.z = -0.08;
+            doodleFaceGroup.add(torsoOutline);
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            updateOutlineGeometries();
+            animate();
+        }
+
+        function updateOutlineGeometries() {
+            if (!headOutline || !torsoOutline) return;
+
+            const headPoints = [];
+            for (let i = 0; i <= 64; i++) {
+                const theta = (i / 64) * Math.PI * 2;
+                const r = 0.75 + (Math.random() - 0.5) * 0.015;
+                headPoints.push(new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), 0));
+            }
+            headOutline.geometry.dispose();
+            headOutline.geometry = new THREE.BufferGeometry().setFromPoints(headPoints);
+
+            const torsoPoints = [];
+            for (let i = 0; i <= 40; i++) {
+                const t = (i / 40);
+                const x = -1.2 + 2.4 * t;
+                const y = (-1.6 + 1.05 * Math.sin(t * Math.PI)) + (Math.random() - 0.5) * 0.012;
+                torsoPoints.push(new THREE.Vector3(x, y, 0));
+            }
+            torsoOutline.geometry.dispose();
+            torsoOutline.geometry = new THREE.BufferGeometry().setFromPoints(torsoPoints);
+        }
+
+        const clock = new THREE.Clock();
+        let lastJitterTime = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (!renderer || !scene || !camera) return;
+
+            const elapsed = clock.getElapsedTime();
+
+            currentCamPos.lerp(targetCamPos, 0.06);
+            currentCamLookAt.lerp(targetCamLookAt, 0.06);
+            camera.position.copy(currentCamPos);
+            camera.lookAt(currentCamLookAt);
+
+            if (headGroup) {
+                headGroup.rotation.y += (mouseX * 0.25 - headGroup.rotation.y) * 0.1;
+                headGroup.rotation.x += (-mouseY * 0.18 - headGroup.rotation.x) * 0.1;
+            }
+
+            if (leftEye && rightEye) {
+                leftEye.rotation.z += eyeSpinSpeed * 0.04;
+                rightEye.rotation.z -= eyeSpinSpeed * 0.06;
+
+                currentEyeScale += (targetEyeScale - currentEyeScale) * 0.08;
+                leftEye.scale.set(currentEyeScale, currentEyeScale, 1);
+                rightEye.scale.set(currentEyeScale, currentEyeScale, 1);
+            }
+
+            if (elapsed - lastJitterTime > 0.08) {
+                updateOutlineGeometries();
+                if (frameLine) frameLine.position.set((Math.random() - 0.5) * 0.003, (Math.random() - 0.5) * 0.003, -0.2);
+                if (speechJitter) bubble.style.transform = `translate(${(Math.random() - 0.5) * 4}px, ${(Math.random() - 0.5) * 4}px)`;
+                lastJitterTime = elapsed;
+            }
+
+            if (doodleFaceGroup) doodleFaceGroup.position.y = Math.sin(elapsed * 1.5) * 0.04;
+
+            renderer.render(scene, camera);
+        }
+
+        // AUTO-RESTORE DASHBOARD WHEN RETURNING (STRICT SESSION CHECK)
+        window.onload = async function() {
+            initThreeJS();
+
+            const params = new URLSearchParams(window.location.search);
+            const viewParam = params.get('view');
+            const accountIdParam = params.get('account_id') || sessionStorage.getItem('logged_account_id');
+
+            // Only enter dashboard if explicit view parameter exists AND valid active session ID is present
+            if (viewParam === 'dashboard' && accountIdParam) {
+                try {
+                    const res = await fetch(`get_account_runs.php?account_id=${accountIdParam}`);
+                    const data = await res.json();
+
+                    if (data.success) {
+                        currentAccount = data.account;
+                        accountProfiles = data.profiles || [];
+                        sessionStorage.setItem('logged_account_id', currentAccount.Account_ID);
+
+                        document.getElementById('accountEmailBadge').innerText = `ACCOUNT: ${currentAccount.Email}`;
+                        renderRunSlots();
+
+                        // Immediate swap behind the loader
+                        const mainEl = document.getElementById('mainMenuState');
+                        const selectEl = document.getElementById('selectRunState');
+                        mainEl.classList.add('hidden', 'opacity-0');
+                        selectEl.classList.remove('hidden', 'opacity-0');
+                        selectEl.classList.add('opacity-100');
+                        currentScreenMode = 'selectRunState';
+
+                        const backBtn = document.getElementById('backToMenuBtn');
+                        backBtn.classList.remove('opacity-0', 'pointer-events-none', 'translate-x-[-20px]');
+
+                        // Clean URL so a manual browser refresh returns to the clean main menu
+                        window.history.replaceState({}, document.title, window.location.pathname);
+
+                        setTimeout(() => {
+                            const loader = document.getElementById('sceneLoader');
+                            loader.classList.add('opacity-0', 'pointer-events-none');
+                            loader.classList.remove('opacity-100');
+                        }, 300);
+
+                        return;
+                    }
+                } catch (err) {
+                    console.warn("Could not restore session:", err);
+                }
+            }
+
+            // Normal refresh or direct load: Ensure main menu and logo are completely visible
+            const mainEl = document.getElementById('mainMenuState');
+            mainEl.classList.remove('hidden', 'opacity-0');
+            mainEl.classList.add('opacity-100');
+            currentScreenMode = 'menu';
+
+            const loader = document.getElementById('sceneLoader');
+            loader.classList.add('opacity-0', 'pointer-events-none');
+            loader.classList.remove('opacity-100');
+
+            setTimeout(() => { if (!bubbleActive) triggerSpeech(); }, 6000);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Rules // Things We Show and Tell</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@600;700&family=Syne:wght@700;800&family=Fira+Code:wght@400;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js -->
+    <script src="three.min.js"></script>
+
+    <style>
+        :root {
+            --body-font: 'Inter', sans-serif;
+            --header-font: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            font-family: var(--body-font);
+            background-color: #f6f5f2;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #1c1917;
+            letter-spacing: -0.01em;
+        }
+
+        .header-font { font-family: var(--header-font) !important; font-weight: 700; }
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        .sketch-border {
+            border: 3px solid #1c1917;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 4px 4px 0px rgba(28, 25, 23, 0.15);
+        }
+        .sketch-border-sm {
+            border: 2px solid #1c1917;
+            border-radius: 120px 8px 110px 8px/8px 110px 8px 120px;
+        }
+
+        .pencil-hatch {
+            background-color: #2b2725;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.15),
+                rgba(255, 255, 255, 0.15) 3px,
+                transparent 3px,
+                transparent 7px
+            );
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes pencil-wiggle {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            75% { transform: translateY(1px) rotate(1.5deg); }
+        }
+        .animate-pencil-jitter {
+            animation: pencil-wiggle 0.2s infinite ease-in-out;
+        }
+
+        .speech-bubble-tail {
+            position: absolute;
+            top: 45px;
+            right: -16px;
+            width: 0;
+            height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 16px solid #1c1917;
+        }
+        .speech-bubble-tail-inner {
+            position: absolute;
+            top: 46px;
+            right: -12px;
+            width: 0;
+            height: 0;
+            border-top: 9px solid transparent;
+            border-bottom: 9px solid transparent;
+            border-left: 14px solid #ffffff;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1c1917; border-radius: 3px; }
+    </style>
+
+    <script>
+        const initialSavedFont = localStorage.getItem('game_font_preset') || 'technical';
+        applyFontPreset(initialSavedFont);
+
+        function applyFontPreset(preset) {
+            let bodyFont = "'Inter', sans-serif";
+            let headerFont = "'Space Grotesk', sans-serif";
+
+            if (preset === 'blueprint') {
+                bodyFont = "'JetBrains Mono', monospace";
+                headerFont = "'Chakra Petch', sans-serif";
+            } else if (preset === 'editorial') {
+                bodyFont = "'Plus Jakarta Sans', sans-serif";
+                headerFont = "'Syne', sans-serif";
+            }
+
+            document.documentElement.style.setProperty('--body-font', bodyFont);
+            document.documentElement.style.setProperty('--header-font', headerFont);
+        }
+    </script>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col justify-center p-6 md:p-8 select-none relative">
+
+    <!-- Sketchy Board Border -->
+    <div class="absolute inset-4 pointer-events-none sketch-border border-[4px] z-40 border-stone-900 shadow-[inset_0_0_30px_rgba(0,0,0,0.05)]"></div>
+
+    <!-- 1. INTRODUCTORY TUTORIAL POPUP OVERLAY -->
+    <div id="tutorialIntroModal" style="display: flex;" class="fixed inset-0 bg-stone-900/60 backdrop-blur-md z-50 items-center justify-center p-4">
+        <div class="max-w-md w-full bg-white p-7 sketch-border text-center relative shadow-2xl">
+            
+            <div class="inline-block bg-amber-100 border-2 border-stone-900 px-3 py-1 rounded sketch-border-sm text-[11px] code-font font-black text-amber-950 uppercase tracking-widest mb-3">
+                // CLASSROOM DESK BRIEFING
+            </div>
+
+            <h1 class="text-4xl md:text-5xl font-black header-font text-stone-900 tracking-tight uppercase leading-none">
+                TUTORIAL
+            </h1>
+
+            <div class="w-24 h-1 bg-rose-700 mx-auto my-3.5 rounded-full"></div>
+
+            <p class="text-xs md:text-sm font-semibold code-font text-stone-600 leading-relaxed">
+                Welcome to recess! Learn how to manage cards on your wooden desk mat, balance Monster stats, and cast Spell scrolls without getting caught by the proctor.
+            </p>
+
+            <div class="mt-6">
+                <button type="button" onclick="dismissTutorialIntro()" class="cursor-pointer bg-stone-900 hover:bg-rose-900 text-white font-black header-font text-sm px-8 py-3 rounded uppercase tracking-wider transition-all transform active:scale-95 shadow-lg flex items-center justify-center gap-2 mx-auto">
+                    <span>START LESSON</span>
+                    <span class="text-[11px] code-font opacity-60">(SPACE / ENTER)</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 2. SCENE TRANSITION GRAPHITE LOADER -->
+    <div id="sceneLoader" style="display: none;" class="fixed inset-0 bg-[#f6f5f2]/95 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+        <div class="max-w-md w-full p-8 text-center relative flex flex-col items-center">
+            <div class="w-full bg-white p-6 sketch-border relative">
+                <span class="text-3xl inline-block animate-pencil-jitter mb-1 code-font font-black text-stone-800">[ /_ ]</span>
+                <h2 id="loaderTitle" class="text-2xl font-black header-font text-stone-900 uppercase tracking-wider">
+                    COMMENCING RECESS DUEL...
+                </h2>
+                <p id="loaderSubtext" class="text-sm code-font text-rose-800 font-bold tracking-wide mt-1">
+                    Entering aisle battle area...
+                </p>
+
+                <div class="mt-6 w-full p-1 sketch-border-sm bg-stone-50 relative h-7 overflow-hidden">
+                    <div id="loaderProgressBar" class="pencil-hatch h-full w-0 transition-all duration-200 relative rounded-sm"></div>
+                </div>
+
+                <div class="mt-3 flex justify-between items-center text-xs code-font text-stone-500 font-bold">
+                    <span id="loaderQueryLog">SELECT * FROM CARD;</span>
+                    <span id="loaderPercent" class="text-stone-900 font-black">0%</span>
+                </div>
+            </div>
+            <div class="mt-4 text-xs code-font text-stone-400 font-bold tracking-widest uppercase">
+                // Please hold while ink dries
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN TWO-COLUMN WORKSPACE -->
+    <main class="w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch z-30 p-2 overflow-hidden">
+        
+        <!-- LEFT: 3D Table Mat Canvas -->
+        <section class="lg:col-span-6 h-full flex flex-col justify-center items-center bg-white rounded-2xl sketch-border relative overflow-hidden">
+            <div id="tableCanvasContainer" class="w-full h-full relative cursor-grab active:cursor-grabbing">
+                <canvas id="threeTableCanvas" class="w-full h-full block"></canvas>
+            </div>
+        </section>
+
+        <!-- RIGHT: 3D Character Portrait with Speech Bubble -->
+        <section class="lg:col-span-6 h-full flex flex-col justify-between bg-white rounded-2xl sketch-border p-4 relative overflow-hidden">
+            <div id="canvasContainer" class="w-full h-full relative overflow-hidden rounded-xl">
+                <canvas id="threeCanvas" class="w-full h-full block"></canvas>
+
+                <div id="speechBubbleWrapper" class="absolute top-[8%] left-3 max-w-[270px] md:max-w-[310px] z-30">
+                    <div class="bg-white p-4 sketch-border relative shadow-xl">
+                        <div class="speech-bubble-tail"></div>
+                        <div class="speech-bubble-tail-inner"></div>
+
+                        <p id="dialogueText" class="text-xs md:text-sm font-semibold leading-relaxed code-font text-stone-900 min-h-[75px]"></p>
+
+                        <div class="mt-3 pt-2.5 border-t border-dashed border-stone-300 flex items-center justify-between gap-2">
+                            <button type="button" onclick="prevDialogue()" id="btnPrev" class="bg-stone-100 hover:bg-stone-200 text-stone-800 text-[10px] font-bold px-3 py-1.5 rounded code-font uppercase disabled:opacity-30 disabled:pointer-events-none transition-all">
+                                &larr; PREV
+                            </button>
+                            <button type="button" onclick="advanceDialogue()" id="btnNext" class="bg-stone-900 hover:bg-rose-900 text-white text-[11px] font-black px-4 py-1.5 rounded header-font uppercase tracking-wider transition-all transform active:scale-95 flex items-center gap-1 shadow">
+                                <span>NEXT &rarr;</span>
+                                <span class="text-[9px] code-font opacity-60">(SPACE)</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- LOGIC SCRIPTS -->
+    <script>
+        let dbMonster1 = null;
+        let dbMonster2 = null;
+        let dbSpell = null;
+        let isIntroOpen = true;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const activeProfileId = urlParams.get('profile_id') || 1;
+        const activeRunName = urlParams.get('run') || 'NEW RUN';
+        const activeAccountId = urlParams.get('account_id') || localStorage.getItem('logged_account_id') || '1';
+
+        // --- AUDIO ENGINE ---
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playMarkerSqueak(pitchStart = 500, pitchEnd = 800, duration = 0.08) {
+            initAudio();
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(pitchStart * 0.7, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(pitchEnd * 0.7, audioCtx.currentTime + duration);
+                gainNode.gain.setValueAtTime(0.025, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playCardThud() {
+            initAudio();
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.12);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.12);
+            } catch(e) {}
+        }
+
+        function playSpellChime() {
+            initAudio();
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(380, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(920, audioCtx.currentTime + 0.35);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+                osc.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.35);
+            } catch(e) {}
+        }
+
+        // --- DISMISS INTRO POPUP MODAL ---
+        function dismissTutorialIntro() {
+            isIntroOpen = false;
+            const modal = document.getElementById('tutorialIntroModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+            playMarkerSqueak(600, 1100, 0.15, 0.05);
+            if (tutorialSteps.length > 0) {
+                displayStep(0);
+            }
+        }
+
+        // --- DOODLE LOADER FUNCTION ---
+        function executeWithLoader(options, actionCallback) {
+            const loader = document.getElementById('sceneLoader');
+            const bar = document.getElementById('loaderProgressBar');
+            const title = document.getElementById('loaderTitle');
+            const subtext = document.getElementById('loaderSubtext');
+            const sqlLog = document.getElementById('loaderQueryLog');
+            const percent = document.getElementById('loaderPercent');
+
+            title.innerText = options.title || "PROCESSING...";
+            bar.style.width = '0%';
+            percent.innerText = '0%';
+
+            loader.style.display = 'flex';
+
+            const steps = options.steps || [
+                { pct: 30, msg: "Parsing query structure...", sql: "UPDATE PROFILE SET Crayon_Balance=50;" },
+                { pct: 70, msg: "Compiling record states...", sql: "SET ENVIRONMENT = 'CLASSROOM_MATCH';" },
+                { pct: 100, msg: "Entering gameplay...", sql: "HTTP/1.1 200 OK" }
+            ];
+
+            let stepIdx = 0;
+            const runStep = () => {
+                if (stepIdx >= steps.length) {
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                        if (actionCallback) actionCallback();
+                    }, 250);
+                    return;
+                }
+
+                const step = steps[stepIdx];
+                bar.style.width = step.pct + '%';
+                percent.innerText = step.pct + '%';
+                subtext.innerText = step.msg;
+                sqlLog.innerText = step.sql;
+
+                playMarkerSqueak(400 + (stepIdx * 120), 700 + (stepIdx * 140), 0.08, 0.03);
+
+                stepIdx++;
+                setTimeout(runStep, options.stepDelay || 160);
+            };
+
+            setTimeout(runStep, 100);
+        }
+
+        // --- LESSON DIALOGUES FETCHING ---
+        let tutorialSteps = [];
+
+        const stepPresets = [
+            { sceneType: 'textbook', eyeSpeed: 0.6 },
+            { sceneType: 'pair', eyeSpeed: 1.2 },
+            { sceneType: 'monster', eyeSpeed: 1.8 },
+            { sceneType: 'spell', eyeSpeed: 1.0 },
+            { sceneType: 'crayons', eyeSpeed: 0.8 },
+            { sceneType: 'scorePad', eyeSpeed: 2.2 }
+        ];
+
+        async function fetchDatabaseDialogues() {
+            try {
+                const res = await fetch('get_dialogues.php');
+                const data = await res.json();
+                
+                if (data.success && data.dialogues.length > 0) {
+                    tutorialSteps = data.dialogues.map((item, index) => ({
+                        text: item.Opponent_Speech,
+                        sceneType: stepPresets[index]?.sceneType || 'textbook',
+                        eyeSpeed: stepPresets[index]?.eyeSpeed || 1.0
+                    }));
+                }
+            } catch (err) {
+                console.error("Failed to fetch dialogues from database:", err);
+            }
+        }
+
+        let currentStep = 0;
+        let charIndex = 0;
+        let isTyping = false;
+        let typeTimer = null;
+
+        const textEl = document.getElementById("dialogueText");
+        const btnPrev = document.getElementById("btnPrev");
+        const btnNext = document.getElementById("btnNext");
+
+        function typeNextChar() {
+            if (!tutorialSteps[currentStep]) return;
+            const fullText = tutorialSteps[currentStep].text;
+            if (charIndex < fullText.length) {
+                textEl.textContent += fullText.charAt(charIndex);
+                if (charIndex % 3 === 0) playMarkerSqueak(600, 750, 0.04);
+                charIndex++;
+                typeTimer = setTimeout(typeNextChar, 18);
+            } else {
+                isTyping = false;
+            }
+        }
+
+        function displayStep(index) {
+            if (!tutorialSteps || tutorialSteps.length === 0 || !tutorialSteps[index]) return;
+            clearTimeout(typeTimer);
+            const step = tutorialSteps[index];
+
+            eyeSpinSpeed = step.eyeSpeed || 0.8;
+            update3DTableScene(step.sceneType);
+
+            btnPrev.disabled = (index === 0);
+            btnNext.innerHTML = index === tutorialSteps.length - 1 
+                ? `<span>START ▶</span><span class="text-[9px] code-font opacity-75">(ENTER)</span>` 
+                : `<span>NEXT &rarr;</span><span class="text-[9px] code-font opacity-75">(SPACE)</span>`;
+
+            textEl.textContent = "";
+            charIndex = 0;
+            isTyping = true;
+            typeNextChar();
+        }
+
+        function advanceDialogue() {
+            if (isIntroOpen) {
+                dismissTutorialIntro();
+                return;
+            }
+
+            if (isTyping) {
+                clearTimeout(typeTimer);
+                if (tutorialSteps[currentStep]) {
+                    textEl.textContent = tutorialSteps[currentStep].text;
+                }
+                isTyping = false;
+                return;
+            }
+
+            if (currentStep < tutorialSteps.length - 1) {
+                currentStep++;
+                displayStep(currentStep);
+            } else {
+                finishTutorial();
+            }
+        }
+
+        function prevDialogue() {
+            if (isIntroOpen) return;
+            if (currentStep > 0) {
+                currentStep--;
+                displayStep(currentStep);
+            }
+        }
+
+        function finishTutorial() {
+            playMarkerSqueak(800, 1600, 0.3, 0.08);
+            executeWithLoader({
+                title: `COMMENCING [ ${activeRunName.toUpperCase()} ]`,
+                steps: [
+                    { pct: 30, msg: "Committing tutorial completion...", sql: `UPDATE PROFILE SET Crayon_Balance=50 WHERE Profile_ID=${activeProfileId};` },
+                    { pct: 75, msg: "Spawning classroom deck slots...", sql: "SELECT * FROM CARD;" },
+                    { pct: 100, msg: "Desk duel initializing...", sql: "HTTP/1.1 200 OK" }
+                ],
+                stepDelay: 140
+            }, async () => {
+                try {
+                    await fetch('complete_tutorial.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ profile_id: activeProfileId })
+                    });
+                } catch (e) {}
+
+                localStorage.setItem("tutorial_seen", "true");
+                window.location.href = `game.html?profile_id=${activeProfileId}&run=${encodeURIComponent(activeRunName)}&account_id=${activeAccountId}`;
+            });
+        }
+
+        window.addEventListener("keydown", (e) => {
+            if (e.code === "Space" || e.code === "Enter") {
+                e.preventDefault();
+                advanceDialogue();
+            } else if (e.code === "ArrowLeft") {
+                prevDialogue();
+            } else if (e.code === "ArrowRight") {
+                advanceDialogue();
+            } else if (e.code === "Escape") {
+                if (isIntroOpen) {
+                    dismissTutorialIntro();
+                } else {
+                    finishTutorial();
+                }
+            }
+        });
+
+        // --- 1. LEFT SCREEN: 3D TABLETOP RENDERING ---
+        let tableScene, tableCamera, tableRenderer, tableGroup, deskItemsGroup, spellLight, spellRuneRing;
+
+        function createCardCanvasTexture(title, type, id, level, stats, desc, imgUrl) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 720;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 512, 720);
+
+            ctx.strokeStyle = '#1c1917';
+            ctx.lineWidth = 14;
+            ctx.strokeRect(7, 7, 498, 706);
+
+            ctx.fillStyle = type === 'MONSTER' ? '#fee2e2' : '#e0e7ff';
+            ctx.fillRect(24, 24, 464, 280);
+            ctx.strokeStyle = '#1c1917';
+            ctx.lineWidth = 6;
+            ctx.strokeRect(24, 24, 464, 280);
+
+            const texture = new THREE.CanvasTexture(canvas);
+
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                ctx.drawImage(img, 24, 24, 464, 280);
+                texture.needsUpdate = true;
+            };
+            img.src = imgUrl || 'https://images.unsplash.com/photo-1577493340887-b7bfff550145?auto=format&fit=crop&w=400&q=80';
+
+            ctx.fillStyle = '#1c1917';
+            ctx.font = 'bold 26px monospace';
+            ctx.fillText(`#${id}`, 36, 62);
+
+            ctx.fillStyle = type === 'MONSTER' ? '#be123c' : '#1d4ed8';
+            ctx.fillRect(370, 36, 106, 38);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 22px sans-serif';
+            ctx.fillText(`LV ${level}`, 396, 64);
+
+            ctx.fillStyle = '#1c1917';
+            ctx.font = 'bold 36px sans-serif';
+            ctx.fillText(title, 28, 350);
+
+            ctx.fillStyle = type === 'MONSTER' ? '#be123c' : '#1d4ed8';
+            ctx.font = 'bold 20px monospace';
+            ctx.fillText(type === 'MONSTER' ? 'MONSTER UNIT' : 'TACTICAL SPELL', 28, 385);
+
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(28, 405);
+            ctx.lineTo(484, 405);
+            ctx.stroke();
+
+            if (type === 'MONSTER') {
+                ctx.fillStyle = '#fef2f2';
+                ctx.fillRect(28, 430, 140, 150);
+                ctx.strokeStyle = '#fecaca';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(28, 430, 140, 150);
+                ctx.fillStyle = '#991b1b';
+                ctx.font = 'bold 20px monospace';
+                ctx.fillText('HEALTH', 44, 470);
+                ctx.font = 'bold 44px sans-serif';
+                ctx.fillText(`${stats.hp}`, 44, 545);
+
+                ctx.fillStyle = '#fffbeb';
+                ctx.fillRect(186, 430, 140, 150);
+                ctx.strokeStyle = '#fde68a';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(186, 430, 140, 150);
+                ctx.fillStyle = '#92400e';
+                ctx.font = 'bold 20px monospace';
+                ctx.fillText('ATTACK', 202, 470);
+                ctx.font = 'bold 44px sans-serif';
+                ctx.fillText(`${stats.atk}`, 202, 545);
+
+                ctx.fillStyle = '#ecfdf5';
+                ctx.fillRect(344, 430, 140, 150);
+                ctx.strokeStyle = '#a7f3d0';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(344, 430, 140, 150);
+                ctx.fillStyle = '#065f46';
+                ctx.font = 'bold 20px monospace';
+                ctx.fillText('SPEED', 362, 470);
+                ctx.font = 'bold 44px sans-serif';
+                ctx.fillText(`${stats.spd}`, 362, 545);
+            } else {
+                ctx.fillStyle = '#f8fafc';
+                ctx.fillRect(28, 430, 456, 240);
+                ctx.strokeStyle = '#cbd5e1';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(28, 430, 456, 240);
+
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 24px monospace';
+                ctx.fillText('SPELL SPECIFICATION:', 44, 475);
+
+                ctx.font = '22px sans-serif';
+                ctx.fillStyle = '#334155';
+                
+                const words = (desc || '').split(' ');
+                let line = '';
+                let y = 525;
+                for (let n = 0; n < words.length; n++) {
+                    const testLine = line + words[n] + ' ';
+                    if (testLine.length > 28) {
+                        ctx.fillText(line, 44, y);
+                        line = words[n] + ' ';
+                        y += 34;
+                    } else {
+                        line = testLine;
+                    }
+                }
+                ctx.fillText(line, 44, y);
+            }
+
+            return texture;
+        }
+
+        function create3DCardMesh(title, type, id, level, stats, desc, imgUrl) {
+            const cardGroup = new THREE.Group();
+            const cardGeo = new THREE.BoxGeometry(1.35, 0.03, 1.9);
+            const frontTex = createCardCanvasTexture(title, type, id, level, stats, desc, imgUrl);
+            
+            const materials = [
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+                new THREE.MeshBasicMaterial({ map: frontTex }),
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 })
+            ];
+            const slab = new THREE.Mesh(cardGeo, materials);
+            cardGroup.add(slab);
+
+            const shadowGeo = new THREE.PlaneGeometry(1.45, 2.0);
+            const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15 });
+            const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+            shadow.rotation.x = -Math.PI / 2;
+            shadow.position.y = -0.018;
+            cardGroup.add(shadow);
+
+            return cardGroup;
+        }
+
+        function create3DNotebook() {
+            const group = new THREE.Group();
+            const bookGeo = new THREE.BoxGeometry(2.4, 0.1, 1.8);
+            const mat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const book = new THREE.Mesh(bookGeo, mat);
+            book.add(new THREE.LineSegments(new THREE.EdgesGeometry(bookGeo), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 2 })));
+            group.add(book);
+
+            const labelGeo = new THREE.PlaneGeometry(1.9, 1.0);
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(0,0,256,128);
+            ctx.strokeStyle = '#1c1917';
+            ctx.lineWidth = 8;
+            ctx.strokeRect(4,4,248,120);
+            ctx.fillStyle = '#1c1917';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText('MATHEMATICS', 30, 50);
+            ctx.font = 'bold 16px monospace';
+            ctx.fillStyle = '#64748b';
+            ctx.fillText('SEMESTER 2 NOTEBOOK', 30, 85);
+            const tex = new THREE.CanvasTexture(canvas);
+            const label = new THREE.Mesh(labelGeo, new THREE.MeshBasicMaterial({ map: tex }));
+            label.rotation.x = -Math.PI / 2;
+            label.position.y = 0.06;
+            group.add(label);
+
+            return group;
+        }
+
+        function create3DCrayonBox() {
+            const group = new THREE.Group();
+            const boxGeo = new THREE.BoxGeometry(2.6, 0.15, 1.7);
+            const boxMat = new THREE.MeshBasicMaterial({ color: 0xfef3c7 });
+            const box = new THREE.Mesh(boxGeo, boxMat);
+            box.add(new THREE.LineSegments(new THREE.EdgesGeometry(boxGeo), new THREE.LineBasicMaterial({ color: 0x1c1917 })));
+            group.add(box);
+
+            const crayonColors = [0xef4444, 0xf59e0b, 0x3b82f6, 0x10b981];
+            crayonColors.forEach((colorHex, idx) => {
+                const crayon = new THREE.Group();
+                const bodyGeo = new THREE.CylinderGeometry(0.065, 0.065, 1.15, 16);
+                const body = new THREE.Mesh(bodyGeo, new THREE.MeshBasicMaterial({ color: colorHex }));
+                body.rotation.x = Math.PI / 2;
+                crayon.add(body);
+
+                const tipGeo = new THREE.ConeGeometry(0.065, 0.22, 16);
+                const tip = new THREE.Mesh(tipGeo, new THREE.MeshBasicMaterial({ color: colorHex }));
+                tip.rotation.x = -Math.PI / 2;
+                tip.position.z = -0.68;
+                crayon.add(tip);
+
+                const sleeveGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.7, 16);
+                const sleeve = new THREE.Mesh(sleeveGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                sleeve.rotation.x = Math.PI / 2;
+                sleeve.position.z = 0.08;
+                crayon.add(sleeve);
+
+                crayon.position.set(-0.85 + (idx * 0.56), 0.12, 0.06);
+                crayon.rotation.y = (idx - 1.5) * 0.03;
+                group.add(crayon);
+            });
+
+            return group;
+        }
+
+        function create3DScorePad() {
+            const group = new THREE.Group();
+            const boardGeo = new THREE.BoxGeometry(1.8, 0.05, 2.4);
+            const boardMat = new THREE.MeshBasicMaterial({ color: 0xd7c4aa });
+            const board = new THREE.Mesh(boardGeo, boardMat);
+            board.add(new THREE.LineSegments(new THREE.EdgesGeometry(boardGeo), new THREE.LineBasicMaterial({ color: 0x1c1917 })));
+            group.add(board);
+
+            const clipGeo = new THREE.BoxGeometry(0.9, 0.06, 0.3);
+            const clip = new THREE.Mesh(clipGeo, new THREE.MeshBasicMaterial({ color: 0x64748b }));
+            clip.position.set(0, 0.05, -1.02);
+            group.add(clip);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 720;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 512, 720);
+
+            ctx.strokeStyle = '#1c1917';
+            ctx.lineWidth = 10;
+            ctx.strokeRect(6, 6, 500, 708);
+
+            ctx.fillStyle = '#1c1917';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillText('RECESS SCORECARD', 40, 80);
+
+            ctx.fillStyle = '#059669';
+            ctx.font = 'bold 22px monospace';
+            ctx.fillText('CURRENT RUN TALLY', 40, 125);
+
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(40, 150);
+            ctx.lineTo(472, 150);
+            ctx.stroke();
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(40, 180, 432, 100);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.strokeRect(40, 180, 432, 100);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 20px monospace';
+            ctx.fillText('AISLE MATCH WINS:', 60, 220);
+            ctx.font = 'bold 44px sans-serif';
+            ctx.fillStyle = '#059669';
+            ctx.fillText('+120 PTS', 60, 265);
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillRect(40, 310, 432, 100);
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.strokeRect(40, 310, 432, 100);
+
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 20px monospace';
+            ctx.fillText('CRAYON TREASURY:', 60, 350);
+            ctx.font = 'bold 44px sans-serif';
+            ctx.fillStyle = '#d97706';
+            ctx.fillText('50 CRAYONS', 60, 395);
+
+            ctx.fillStyle = '#be123c';
+            ctx.font = 'bold 22px sans-serif';
+            ctx.fillText('VICTORY GOAL: DEFEAT ROW 1', 40, 480);
+
+            ctx.fillStyle = '#64748b';
+            ctx.font = '18px monospace';
+            ctx.fillText('// SCORE DROPPING TO 0 = BREAK', 40, 540);
+            ctx.fillText('// KEEP AT LEAST 1 UNIT ACTIVE', 40, 575);
+
+            const tex = new THREE.CanvasTexture(canvas);
+            const sheet = new THREE.Mesh(
+                new THREE.PlaneGeometry(1.6, 2.05),
+                new THREE.MeshBasicMaterial({ map: tex })
+            );
+            sheet.rotation.x = -Math.PI / 2;
+            sheet.position.y = 0.035;
+            group.add(sheet);
+
+            const shadowGeo = new THREE.PlaneGeometry(1.9, 2.5);
+            const shadow = new THREE.Mesh(shadowGeo, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.15 }));
+            shadow.rotation.x = -Math.PI / 2;
+            shadow.position.y = -0.018;
+            group.add(shadow);
+
+            return group;
+        }
+
+        function init3DTable() {
+            const container = document.getElementById('tableCanvasContainer');
+            const canvas = document.getElementById('threeTableCanvas');
+            tableScene = new THREE.Scene();
+            tableScene.background = new THREE.Color(0xf6f5f2);
+
+            tableCamera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
+            tableCamera.position.set(0, 4.8, 5.8);
+            tableCamera.lookAt(0, -0.4, -0.6);
+
+            tableRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            tableRenderer.setSize(container.clientWidth, container.clientHeight);
+            tableRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            window.addEventListener('resize', () => {
+                if (!container || !tableCamera || !tableRenderer) return;
+                tableCamera.aspect = container.clientWidth / container.clientHeight;
+                tableCamera.updateProjectionMatrix();
+                tableRenderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            const ambient = new THREE.AmbientLight(0xffffff, 1.0);
+            tableScene.add(ambient);
+
+            spellLight = new THREE.PointLight(0x3b82f6, 0, 8);
+            spellLight.position.set(0, 2.0, -0.6);
+            tableScene.add(spellLight);
+
+            tableGroup = new THREE.Group();
+            tableGroup.position.set(0, 0, -0.6);
+
+            const slabGeo = new THREE.BoxGeometry(6.4, 0.22, 4.6);
+            const slab = new THREE.Mesh(slabGeo, new THREE.MeshBasicMaterial({ color: 0xede8dc }));
+            slab.add(new THREE.LineSegments(new THREE.EdgesGeometry(slabGeo), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 2 })));
+            tableGroup.add(slab);
+
+            const legGeo = new THREE.CylinderGeometry(0.1, 0.1, 2.8, 6);
+            [[-2.8, -1.4, -1.9], [2.8, -1.4, -1.9], [-2.8, -1.4, 1.9], [2.8, -1.4, 1.9]].forEach(pos => {
+                const leg = new THREE.Mesh(legGeo, new THREE.MeshBasicMaterial({ color: 0xded8cc }));
+                leg.add(new THREE.LineSegments(new THREE.EdgesGeometry(legGeo), new THREE.LineBasicMaterial({ color: 0x1c1917 })));
+                leg.position.set(...pos);
+                tableGroup.add(leg);
+            });
+
+            const grid = new THREE.GridHelper(4.6, 6, 0x94a3b8, 0xd1d5db);
+            grid.position.y = 0.12;
+            tableGroup.add(grid);
+
+            tableScene.add(tableGroup);
+
+            deskItemsGroup = new THREE.Group();
+            deskItemsGroup.position.set(0, 0, -0.6);
+            tableScene.add(deskItemsGroup);
+        }
+
+        let animatedItems = [];
+
+        function clearDeskItems() {
+            while (deskItemsGroup.children.length > 0) {
+                deskItemsGroup.remove(deskItemsGroup.children[0]);
+            }
+            animatedItems = [];
+            spellLight.intensity = 0;
+            if (spellRuneRing) {
+                tableScene.remove(spellRuneRing);
+                spellRuneRing = null;
+            }
+        }
+
+        function update3DTableScene(type) {
+            clearDeskItems();
+
+            if (type === 'textbook') {
+                const book = create3DNotebook();
+                book.position.set(0, 3.5, 0);
+                deskItemsGroup.add(book);
+                animatedItems.push({ obj: book, targetY: 0.14, phase: 0, bobAmp: 0.03 });
+                playCardThud();
+            } else if (type === 'pair') {
+                const m1 = dbMonster1 || { Card_Name: 'FLAME DRAKE', Card_ID: '01', Upgrade_Level: 3, Health: 180, Attack: 120, Secret_Speed: 45, Card_Image: 'https://images.unsplash.com/photo-1577493340887-b7bfff550145?auto=format&fit=crop&w=400&q=80' };
+                const s1 = dbSpell || { Card_Name: 'TIME WARP', Card_ID: '22', Upgrade_Level: 5, SpellEffect_Desc: 'Grants an extra turn and resets spell cooldowns for 1 turn.', Card_Image: 'https://images.unsplash.com/photo-1501139083538-0139583c060f?auto=format&fit=crop&w=400&q=80' };
+
+                const monsterCard = create3DCardMesh(
+                    m1.Card_Name, 'MONSTER', m1.Card_ID, m1.Upgrade_Level,
+                    { hp: m1.Health, atk: m1.Attack, spd: m1.Secret_Speed }, '',
+                    m1.Card_Image
+                );
+                monsterCard.position.set(-1.05, 3.5, 0);
+                deskItemsGroup.add(monsterCard);
+                animatedItems.push({ obj: monsterCard, targetY: 0.12, phase: 0, bobAmp: 0.04 });
+
+                const spellCard = create3DCardMesh(
+                    s1.Card_Name, 'SPELL', s1.Card_ID, s1.Upgrade_Level,
+                    {}, s1.SpellEffect_Desc,
+                    s1.Card_Image
+                );
+                spellCard.position.set(1.05, 4.0, 0);
+                deskItemsGroup.add(spellCard);
+                animatedItems.push({ obj: spellCard, targetY: 0.12, phase: Math.PI, bobAmp: 0.04 });
+                playCardThud();
+            } else if (type === 'monster') {
+                const m2 = dbMonster2 || { Card_Name: 'SHADOW STALKER', Card_ID: '02', Upgrade_Level: 2, Health: 95, Attack: 140, Secret_Speed: 88, Card_Image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80' };
+                
+                const speedMonster = create3DCardMesh(
+                    m2.Card_Name, 'MONSTER', m2.Card_ID, m2.Upgrade_Level,
+                    { hp: m2.Health, atk: m2.Attack, spd: m2.Secret_Speed }, '',
+                    m2.Card_Image
+                );
+                speedMonster.position.set(0, 3.5, 0);
+                deskItemsGroup.add(speedMonster);
+                animatedItems.push({ obj: speedMonster, targetY: 0.12, phase: 0, bobAmp: 0.05 });
+                playCardThud();
+            } else if (type === 'spell') {
+                const s1 = dbSpell || { Card_Name: 'ARCANE SHIELD', Card_ID: '21', Upgrade_Level: 3, SpellEffect_Desc: 'Grants a barrier that absorbs up to 200 damage for 3 turns.', Card_Image: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=400&q=80' };
+
+                const shieldSpell = create3DCardMesh(
+                    s1.Card_Name, 'SPELL', s1.Card_ID, s1.Upgrade_Level,
+                    {}, s1.SpellEffect_Desc,
+                    s1.Card_Image
+                );
+                shieldSpell.position.set(0, 3.5, 0);
+                deskItemsGroup.add(shieldSpell);
+                animatedItems.push({ obj: shieldSpell, targetY: 0.16, phase: 0, bobAmp: 0.07 });
+                spellLight.intensity = 2.0;
+
+                const runeRingGeo = new THREE.TorusGeometry(1.2, 0.015, 4, 32);
+                spellRuneRing = new THREE.Mesh(runeRingGeo, new THREE.MeshBasicMaterial({ color: 0x3b82f6 }));
+                spellRuneRing.rotation.x = Math.PI / 2;
+                spellRuneRing.position.set(0, 0.18, -0.6);
+                tableScene.add(spellRuneRing);
+
+                playSpellChime();
+            } else if (type === 'crayons') {
+                const crayons = create3DCrayonBox();
+                crayons.position.set(0, 3.5, 0);
+                deskItemsGroup.add(crayons);
+                animatedItems.push({ obj: crayons, targetY: 0.16, phase: 0, bobAmp: 0.03 });
+                playMarkerSqueak(400, 900, 0.1);
+            } else if (type === 'scorePad') {
+                const scorecard = create3DScorePad();
+                scorecard.position.set(0, 3.5, 0);
+                deskItemsGroup.add(scorecard);
+                animatedItems.push({ obj: scorecard, targetY: 0.14, phase: 0, bobAmp: 0.03 });
+                playCardThud();
+            }
+        }
+
+        // --- 2. RIGHT SCREEN: 3D CHARACTER PORTRAIT ---
+        let scene, camera, renderer, doodleFaceGroup, headGroup, headOutline, torsoOutline, frameLine, leftEye, rightEye;
+        let targetEyeScale = 1.5, currentEyeScale = 1.5, eyeSpinSpeed = 0.8;
+        let mouseX = 0, mouseY = 0;
+
+        function initThreeJS() {
+            if (typeof THREE === 'undefined') return;
+
+            const canvasContainer = document.getElementById('canvasContainer');
+            const canvas = document.getElementById('threeCanvas');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+
+            camera = new THREE.PerspectiveCamera(45, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 100);
+            camera.position.set(0.68, 0, 4.2);
+
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            window.addEventListener('resize', () => {
+                if (!canvasContainer || !camera || !renderer) return;
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            });
+
+            const ambientLight = new THREE.AmbientLight(0xfffbf9, 1.2);
+            scene.add(ambientLight);
+
+            doodleFaceGroup = new THREE.Group();
+            doodleFaceGroup.position.set(0.68, 0, 0);
+            scene.add(doodleFaceGroup);
+
+            const framePoints = [
+                new THREE.Vector3(-1.6, -1.6, 0),
+                new THREE.Vector3(1.6, -1.6, 0),
+                new THREE.Vector3(1.6, 1.6, 0),
+                new THREE.Vector3(-1.6, 1.6, 0),
+                new THREE.Vector3(-1.6, -1.6, 0)
+            ];
+            const frameGeo = new THREE.BufferGeometry().setFromPoints(framePoints);
+            frameLine = new THREE.Line(frameGeo, new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 2.5 }));
+            frameLine.position.z = -0.2;
+            doodleFaceGroup.add(frameLine);
+
+            headGroup = new THREE.Group();
+            headGroup.position.set(0, 0.25, 0);
+            doodleFaceGroup.add(headGroup);
+
+            const leftHalfGeo = new THREE.CircleGeometry(0.75, 32, Math.PI / 2, Math.PI);
+            const leftHalfMesh = new THREE.Mesh(leftHalfGeo, new THREE.MeshBasicMaterial({ color: 0xfbfbf9, side: THREE.DoubleSide }));
+            leftHalfMesh.position.z = -0.05;
+            headGroup.add(leftHalfMesh);
+
+            const rightHalfGeo = new THREE.CircleGeometry(0.75, 32, -Math.PI / 2, Math.PI);
+            const rightHalfMesh = new THREE.Mesh(rightHalfGeo, new THREE.MeshBasicMaterial({ color: 0x1c1917, side: THREE.DoubleSide }));
+            rightHalfMesh.position.z = -0.05;
+            headGroup.add(rightHalfMesh);
+
+            const points = [];
+            for (let y = 0.7; y >= -0.7; y -= 0.06) {
+                const maxX = Math.sqrt(Math.max(0, 0.73 * 0.73 - y * y));
+                points.push(new THREE.Vector3(0, y, 0));
+                points.push(new THREE.Vector3(maxX * 0.9, y - 0.03, 0));
+                points.push(new THREE.Vector3(0, y - 0.05, 0));
+            }
+            const scribbleShed = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points), new THREE.LineBasicMaterial({ color: 0x2e2a27, linewidth: 2 }));
+            scribbleShed.position.z = -0.01;
+            headGroup.add(scribbleShed);
+
+            const splitLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0.75, 0), new THREE.Vector3(0, -0.75, 0)]), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 3 }));
+            splitLine.position.z = -0.02;
+            headGroup.add(splitLine);
+
+            headOutline = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 3 }));
+            headOutline.position.z = 0.05;
+            headGroup.add(headOutline);
+
+            function createSpiralGeometry(turns = 2.4, maxRadius = 0.12) {
+                const spiralPoints = [];
+                const segments = 60;
+                for (let i = 0; i <= segments; i++) {
+                    const pct = i / segments;
+                    const theta = pct * (turns * Math.PI * 2);
+                    const r = pct * maxRadius;
+                    spiralPoints.push(new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), 0));
+                }
+                return new THREE.BufferGeometry().setFromPoints(spiralPoints);
+            }
+
+            leftEye = new THREE.Line(createSpiralGeometry(2.4, 0.13), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 4 }));
+            leftEye.position.set(-0.35, 0.08, 0.1);
+            headGroup.add(leftEye);
+
+            rightEye = new THREE.Line(createSpiralGeometry(2.6, 0.13), new THREE.LineBasicMaterial({ color: 0xbe123c, linewidth: 4 }));
+            rightEye.position.set(0.35, 0.08, 0.1);
+            headGroup.add(rightEye);
+
+            const torsoShape = new THREE.Shape();
+            torsoShape.moveTo(-1.2, -1.6);
+            torsoShape.quadraticCurveTo(0, -0.55, 1.2, -1.6);
+            torsoShape.lineTo(-1.2, -1.6);
+
+            const torsoMesh = new THREE.Mesh(new THREE.ShapeGeometry(torsoShape), new THREE.MeshBasicMaterial({ color: 0xf3f2ee, side: THREE.DoubleSide }));
+            torsoMesh.position.z = -0.1;
+            doodleFaceGroup.add(torsoMesh);
+
+            torsoOutline = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 3 }));
+            torsoOutline.position.z = -0.08;
+            doodleFaceGroup.add(torsoOutline);
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+
+            updateOutlineGeometries();
+        }
+
+        function updateOutlineGeometries() {
+            if (!headOutline || !torsoOutline) return;
+
+            const headPoints = [];
+            for (let i = 0; i <= 64; i++) {
+                const theta = (i / 64) * Math.PI * 2;
+                const r = 0.75 + (Math.random() - 0.5) * 0.015;
+                headPoints.push(new THREE.Vector3(r * Math.cos(theta), r * Math.sin(theta), 0));
+            }
+            headOutline.geometry.dispose();
+            headOutline.geometry = new THREE.BufferGeometry().setFromPoints(headPoints);
+
+            const torsoPoints = [];
+            for (let i = 0; i <= 40; i++) {
+                const t = (i / 40);
+                const x = -1.2 + 2.4 * t;
+                const y = (-1.6 + 1.05 * Math.sin(t * Math.PI)) + (Math.random() - 0.5) * 0.012;
+                torsoPoints.push(new THREE.Vector3(x, y, 0));
+            }
+            torsoOutline.geometry.dispose();
+            torsoOutline.geometry = new THREE.BufferGeometry().setFromPoints(torsoPoints);
+        }
+
+        const clock = new THREE.Clock();
+        let lastJitterTime = 0;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const elapsed = clock.getElapsedTime();
+
+            // Table items hover
+            animatedItems.forEach(item => {
+                item.obj.position.y += (item.targetY - item.obj.position.y) * 0.14;
+
+                const bobOffset = Math.sin(elapsed * 2.0 + item.phase) * (item.bobAmp || 0.03);
+                item.obj.position.y += bobOffset * 0.03;
+                item.obj.rotation.x = Math.sin(elapsed * 1.5 + item.phase) * 0.012;
+                item.obj.rotation.z = Math.cos(elapsed * 1.2 + item.phase) * 0.01;
+            });
+
+            if (spellRuneRing) {
+                spellRuneRing.rotation.z += 0.02;
+            }
+
+            if (tableRenderer && tableScene && tableCamera) {
+                tableRenderer.render(tableScene, tableCamera);
+            }
+
+            // Character Rendering
+            if (renderer && scene && camera) {
+                if (headGroup) {
+                    headGroup.rotation.y += (mouseX * 0.2 - headGroup.rotation.y) * 0.1;
+                    headGroup.rotation.x += (-mouseY * 0.15 - headGroup.rotation.x) * 0.1;
+                }
+
+                if (leftEye && rightEye) {
+                    leftEye.rotation.z += eyeSpinSpeed * 0.04;
+                    rightEye.rotation.z -= eyeSpinSpeed * 0.06;
+
+                    currentEyeScale += (targetEyeScale - currentEyeScale) * 0.08;
+                    leftEye.scale.set(currentEyeScale, currentEyeScale, 1);
+                    rightEye.scale.set(currentEyeScale, currentEyeScale, 1);
+                }
+
+                if (elapsed - lastJitterTime > 0.08) {
+                    updateOutlineGeometries();
+                    if (frameLine) frameLine.position.set((Math.random() - 0.5) * 0.003, (Math.random() - 0.5) * 0.003, -0.2);
+                    lastJitterTime = elapsed;
+                }
+
+                if (doodleFaceGroup) doodleFaceGroup.position.y = Math.sin(elapsed * 1.5) * 0.04;
+
+                renderer.render(scene, camera);
+            }
+        }
+
+        async function fetchDatabaseCards() {
+            try {
+                const res = await fetch('get_tutorial_cards.php');
+                const data = await res.json();
+                if (data.success) {
+                    dbMonster1 = data.monster_1;
+                    dbMonster2 = data.monster_2;
+                    dbSpell = data.spell_1;
+                    if (!isIntroOpen && tutorialSteps.length > 0) {
+                        displayStep(currentStep);
+                    }
+                }
+            } catch (err) {}
+        }
+
+        window.onload = async function() {
+            init3DTable();
+            initThreeJS();
+            animate();
+            await fetchDatabaseDialogues();
+            await fetchDatabaseCards();
+            if (!isIntroOpen && tutorialSteps.length > 0) {
+                displayStep(currentStep);
+            }
+        };
+    </script>
+</body>
+</html>

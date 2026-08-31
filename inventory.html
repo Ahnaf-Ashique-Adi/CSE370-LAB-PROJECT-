@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Card Inventory // Things We Show and Tell</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Clean Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@600;700&family=Syne:wght@700;800&family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --body-font: 'Inter', sans-serif;
+            --header-font: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            font-family: var(--body-font);
+            background-color: #f6f5f2;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #1c1917;
+            letter-spacing: -0.01em;
+        }
+        .header-font { font-family: var(--header-font) !important; font-weight: 700; }
+        .code-font { font-family: 'Fira Code', monospace; }
+        
+        .sketch-border {
+            border: 3px solid #1c1917;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 4px 4px 0px rgba(28, 25, 23, 0.15);
+        }
+        .sketch-border-sm {
+            border: 2px solid #1c1917;
+            border-radius: 120px 8px 110px 8px/8px 110px 8px 120px;
+        }
+        .card-frame {
+            border: 2px solid #1c1917;
+            border-radius: 18px 4px 16px 5px/5px 16px 4px 18px;
+            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            cursor: pointer;
+        }
+        .card-frame:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 6px 6px 0px rgba(28, 25, 23, 0.25);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1c1917; border-radius: 3px; }
+    </style>
+
+    <script>
+        const initialSavedFont = localStorage.getItem('game_font_preset') || 'technical';
+        applyFontPreset(initialSavedFont, false);
+
+        function applyFontPreset(preset, notifyTerminal = true) {
+            let bodyFont = "'Inter', sans-serif";
+            let headerFont = "'Space Grotesk', sans-serif";
+
+            if (preset === 'blueprint') {
+                bodyFont = "'JetBrains Mono', monospace";
+                headerFont = "'Chakra Petch', sans-serif";
+            } else if (preset === 'editorial') {
+                bodyFont = "'Plus Jakarta Sans', sans-serif";
+                headerFont = "'Syne', sans-serif";
+            }
+
+            document.documentElement.style.setProperty('--body-font', bodyFont);
+            document.documentElement.style.setProperty('--header-font', headerFont);
+            localStorage.setItem('game_font_preset', preset);
+
+            if (notifyTerminal && typeof writeLog === 'function') {
+                writeLog(`UPDATE SYSTEM_SETTINGS SET Font_Preset = '${preset.toUpperCase()}';`);
+            }
+        }
+    </script>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none relative">
+
+    <div class="absolute inset-3 pointer-events-none sketch-border border-[4px] z-40 border-stone-900 shadow-[inset_0_0_30px_rgba(0,0,0,0.05)]"></div>
+
+    <!-- TOP HEADER -->
+    <header class="w-full flex justify-between items-center z-30 px-4 pt-2">
+        <div class="flex items-center gap-3">
+            <a href="index.html" class="bg-white hover:bg-stone-100 text-stone-900 text-xs font-black px-4 py-2 sketch-border-sm flex items-center gap-2 header-font uppercase tracking-wider transition-all transform active:scale-95">
+                &larr; MAIN MENU
+            </a>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-black text-rose-800 header-font leading-none">ARCHIVE_INVENTORY //</h1>
+                <p class="text-[11px] text-stone-500 font-bold uppercase code-font">TOTAL CARDS IN DATABASE: <span id="cardCountBadge" class="text-rose-700">--</span></p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button onclick="toggleSqlConsole()" class="bg-white hover:bg-stone-50 text-stone-900 text-xs font-black px-4 py-2 sketch-border-sm code-font uppercase tracking-wider">
+                SQL_TERMINAL [ ~ ]
+            </button>
+        </div>
+    </header>
+
+    <!-- FLOATING RAW SQL MONITOR -->
+    <div id="sqlTerminal" class="fixed bottom-8 right-8 w-[400px] bg-stone-950 text-emerald-400 p-4 rounded-xl shadow-2xl z-50 border-2 border-stone-800 transition-all duration-500 flex flex-col transform translate-x-[450px] opacity-0 pointer-events-none">
+        <div class="flex justify-between items-center border-b border-stone-800 pb-2 mb-2 text-[10px] tracking-widest font-black uppercase text-stone-400 code-font">
+            <span class="flex items-center gap-1.5">
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                INVENTORY_SQL_LOGS
+            </span>
+            <button onclick="toggleSqlConsole()" class="text-stone-400 hover:text-rose-400 text-[10px] font-black border border-stone-800 px-1.5 py-0.5 rounded code-font uppercase">
+                [ HIDE ]
+            </button>
+        </div>
+        <div class="h-32 overflow-y-auto text-xs code-font space-y-1.5 scrollbar-thin" id="sqlConsoleLog">
+            <div class="text-stone-500">-- Initializing inventory database view...</div>
+        </div>
+    </div>
+
+    <!-- CENTERED CARD INSPECTOR / FOCUS MODAL -->
+    <div id="cardInspectModal" onclick="closeCardModal(event)" class="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+        <div id="modalCardBody" onclick="event.stopPropagation()" class="bg-[#f6f5f2] sketch-border max-w-sm w-full p-5 relative flex flex-col justify-between shadow-2xl transform scale-95 transition-all duration-300">
+            <button onclick="closeCardModal()" class="absolute -top-3 -right-3 bg-stone-900 text-white w-8 h-8 rounded-full border-2 border-stone-100 flex items-center justify-center text-sm font-black hover:bg-rose-800 transition-all">
+                &times;
+            </button>
+            <div>
+                <div class="relative w-full h-52 bg-stone-200 rounded border-2 border-stone-900 overflow-hidden mb-3">
+                    <img id="modalCardImg" src="" alt="Card Image" class="w-full h-full object-cover">
+                    <span id="modalCardId" class="absolute top-2 left-2 bg-stone-900/90 text-white text-xs px-2 py-0.5 rounded code-font font-bold">#0</span>
+                    <span id="modalCardLevel" class="absolute top-2 right-2 bg-rose-700 text-white text-xs px-2 py-0.5 rounded header-font font-black uppercase">LV 1</span>
+                </div>
+
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 id="modalCardName" class="text-xl font-black header-font text-stone-950 uppercase tracking-wide">CARD NAME</h2>
+                        <span id="modalCardType" class="text-xs code-font font-bold uppercase text-rose-800">MONSTER CARD</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modalCardStats" class="mt-4 pt-3 border-t-2 border-dashed border-stone-300">
+                <!-- Populated dynamically -->
+            </div>
+
+            <div class="mt-4 text-center">
+                <span class="text-[10px] code-font font-bold text-stone-400 uppercase">CLICK ANYWHERE OUTSIDE OR PRESS ESC TO CLOSE</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN INVENTORY WORKSPACE -->
+    <main class="w-full flex-grow flex flex-col z-20 overflow-hidden px-4 py-2 mt-2">
+        
+        <!-- FILTER & SEARCH BAR -->
+        <div class="w-full flex flex-wrap justify-between items-center gap-3 pb-3 border-b-2 border-stone-300">
+            <div class="flex gap-2">
+                <button onclick="setFilter('all')" id="filter-all" class="bg-stone-900 text-white px-4 py-1.5 text-xs font-black sketch-border-sm uppercase header-font transition-all">
+                    ALL (<span id="count-all">0</span>)
+                </button>
+                <button onclick="setFilter('monster')" id="filter-monster" class="bg-white hover:bg-stone-100 text-stone-900 px-4 py-1.5 text-xs font-black sketch-border-sm uppercase header-font transition-all">
+                    [ MONSTERS ] (<span id="count-monster">0</span>)
+                </button>
+                <button onclick="setFilter('spell')" id="filter-spell" class="bg-white hover:bg-stone-100 text-stone-900 px-4 py-1.5 text-xs font-black sketch-border-sm uppercase header-font transition-all">
+                    [ SPELLS ] (<span id="count-spell">0</span>)
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="text" id="searchInput" oninput="handleSearch(this.value)" placeholder="Search card name, id, stats..." class="bg-white text-stone-900 px-3 py-1 text-xs border-2 border-stone-900 sketch-border-sm focus:outline-none w-60 font-bold code-font">
+            </div>
+        </div>
+
+        <!-- CARDS GRID VIEW -->
+        <div id="cardGrid" class="w-full flex-grow overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 py-4 pr-2">
+            <!-- Dynamically populated -->
+        </div>
+    </main>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        let allCards = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+
+        let consoleOpen = false;
+        function toggleSqlConsole() {
+            const el = document.getElementById('sqlTerminal');
+            if (consoleOpen) {
+                el.classList.add('translate-x-[450px]', 'opacity-0', 'pointer-events-none');
+            } else {
+                el.classList.remove('translate-x-[450px]', 'opacity-0', 'pointer-events-none');
+            }
+            consoleOpen = !consoleOpen;
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '`' || e.key === '~') {
+                if (document.activeElement !== document.getElementById('searchInput')) {
+                    e.preventDefault();
+                    toggleSqlConsole();
+                }
+            } else if (e.key === 'Escape') {
+                closeCardModal();
+            }
+        });
+
+        function writeLog(query, success = true) {
+            const consoleBox = document.getElementById('sqlConsoleLog');
+            const ts = new Date().toLocaleTimeString();
+            let row = `<div class="text-amber-400 font-bold mt-2">[${ts}] EXECUTED:</div>`;
+            row += `<div class="text-stone-100 font-bold pl-2 break-all">${query}</div>`;
+            row += success ? `<div class="text-emerald-500 text-[10px] pl-2 font-mono">SUCCESS: 200 OK</div>` : `<div class="text-rose-500 text-[10px] pl-2 font-mono">FAILED</div>`;
+            consoleBox.innerHTML += row;
+            consoleBox.scrollTop = consoleBox.scrollHeight;
+        }
+
+        async function fetchCards() {
+            writeLog("SELECT c.*, m.Health, m.Attack, m.Secret_Speed, s.SpellEffect_Desc FROM CARD c LEFT JOIN MONSTER_CARD m ON c.Card_ID = m.Card_ID LEFT JOIN SPELL_CARD s ON c.Card_ID = s.Card_ID ORDER BY c.Card_ID ASC;");
+            try {
+                const res = await fetch('get_cards.php');
+                const data = await res.json();
+                if (data.success) {
+                    allCards = data.cards;
+                    document.getElementById('cardCountBadge').innerText = data.count;
+                    document.getElementById('count-all').innerText = data.count;
+                    document.getElementById('count-monster').innerText = allCards.filter(c => c.card_type === 'monster').length;
+                    document.getElementById('count-spell').innerText = allCards.filter(c => c.card_type === 'spell').length;
+                    renderCards();
+                } else {
+                    writeLog("API Error: " + data.message, false);
+                }
+            } catch (e) {
+                writeLog("Failed to fetch cards: " + e.message, false);
+            }
+        }
+
+        function setFilter(type) {
+            currentFilter = type;
+            ['all', 'monster', 'spell'].forEach(t => {
+                const btn = document.getElementById(`filter-${t}`);
+                if (t === type) {
+                    btn.className = "bg-stone-900 text-white px-4 py-1.5 text-xs font-black sketch-border-sm uppercase header-font transition-all";
+                } else {
+                    btn.className = "bg-white hover:bg-stone-100 text-stone-900 px-4 py-1.5 text-xs font-black sketch-border-sm uppercase header-font transition-all";
+                }
+            });
+            renderCards();
+        }
+
+        function handleSearch(val) {
+            searchQuery = val.toLowerCase().trim();
+            renderCards();
+        }
+
+        function renderCards() {
+            const container = document.getElementById('cardGrid');
+            container.innerHTML = '';
+
+            const filtered = allCards.filter(card => {
+                const matchesFilter = (currentFilter === 'all') || (card.card_type === currentFilter);
+                const matchesSearch = card.Card_Name.toLowerCase().includes(searchQuery) ||
+                                      (card.SpellEffect_Desc && card.SpellEffect_Desc.toLowerCase().includes(searchQuery)) ||
+                                      (card.Card_ID.toString().includes(searchQuery));
+                return matchesFilter && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="col-span-full text-center text-stone-400 py-12 code-font">-- NO RECORDS MATCH THE CURRENT FILTER --</div>`;
+                return;
+            }
+
+            filtered.forEach(card => {
+                const isMonster = card.card_type === 'monster';
+                const el = document.createElement('div');
+                el.className = "card-frame bg-white p-2.5 flex flex-col justify-between shadow-sm relative";
+                
+                // Trigger inspection modal on click
+                el.onclick = () => openCardModal(card);
+                
+                el.innerHTML = `
+                    <div>
+                        <div class="relative w-full h-28 bg-stone-100 rounded border border-stone-800 overflow-hidden mb-2">
+                            <img src="${card.Card_Image}" alt="${card.Card_Name}" class="w-full h-full object-cover" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=600&q=80'">
+                            <span class="absolute top-1 left-1 bg-stone-900/85 text-white text-[9px] px-1.5 py-0.5 rounded code-font font-bold">#${card.Card_ID}</span>
+                            <span class="absolute top-1 right-1 ${isMonster ? 'bg-rose-700' : 'bg-blue-700'} text-white text-[9px] px-1.5 py-0.5 rounded header-font font-black uppercase">
+                                LV ${card.Upgrade_Level}
+                            </span>
+                        </div>
+
+                        <h3 class="font-bold header-font text-stone-950 text-sm tracking-wide leading-tight uppercase truncate" title="${card.Card_Name}">${card.Card_Name}</h3>
+                        <p class="text-[10px] code-font font-bold uppercase ${isMonster ? 'text-rose-800' : 'text-blue-800'} mb-1.5">
+                            ${isMonster ? 'Monster Unit' : 'Spell Cast'}
+                        </p>
+                    </div>
+
+                    <div class="pt-2 border-t border-dashed border-stone-300 pointer-events-none">
+                        ${isMonster ? `
+                            <div class="grid grid-cols-3 gap-1 text-center text-[10px] code-font font-black">
+                                <div class="bg-red-50 text-red-700 p-1 rounded border border-red-200">
+                                    <span class="block text-[8px] text-stone-400">HP</span>${card.Health}
+                                </div>
+                                <div class="bg-amber-50 text-amber-800 p-1 rounded border border-amber-200">
+                                    <span class="block text-[8px] text-stone-400">ATK</span>${card.Attack}
+                                </div>
+                                <div class="bg-emerald-50 text-emerald-800 p-1 rounded border border-emerald-200">
+                                    <span class="block text-[8px] text-stone-400">SPD</span>${card.Secret_Speed}
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="bg-stone-50 p-1.5 rounded border border-stone-200 text-[10px] leading-tight text-stone-700 font-bold h-12 overflow-y-auto">
+                                ${card.SpellEffect_Desc}
+                            </div>
+                        `}
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        // --- MODAL FOCUS LOGIC ---
+        function openCardModal(card) {
+            writeLog(`SELECT * FROM CARD WHERE Card_ID = ${card.Card_ID};`);
+            const isMonster = card.card_type === 'monster';
+
+            document.getElementById('modalCardImg').src = card.Card_Image;
+            document.getElementById('modalCardId').innerText = `#${card.Card_ID}`;
+            document.getElementById('modalCardLevel').innerText = `LV ${card.Upgrade_Level}`;
+            document.getElementById('modalCardLevel').className = `absolute top-2 right-2 ${isMonster ? 'bg-rose-700' : 'bg-blue-700'} text-white text-xs px-2 py-0.5 rounded header-font font-black uppercase`;
+            document.getElementById('modalCardName').innerText = card.Card_Name;
+            document.getElementById('modalCardType').innerText = isMonster ? 'Monster Unit // Combatant' : 'Spell Cast // Instant Action';
+            document.getElementById('modalCardType').className = `text-xs code-font font-bold uppercase ${isMonster ? 'text-rose-800' : 'text-blue-800'}`;
+
+            const statsBox = document.getElementById('modalCardStats');
+            if (isMonster) {
+                statsBox.innerHTML = `
+                    <div class="grid grid-cols-3 gap-2 text-center code-font font-black">
+                        <div class="bg-red-50 text-red-700 p-2 rounded-lg border border-red-200">
+                            <span class="block text-[10px] text-stone-400">HEALTH</span>
+                            <span class="text-base">${card.Health}</span>
+                        </div>
+                        <div class="bg-amber-50 text-amber-800 p-2 rounded-lg border border-amber-200">
+                            <span class="block text-[10px] text-stone-400">ATTACK</span>
+                            <span class="text-base">${card.Attack}</span>
+                        </div>
+                        <div class="bg-emerald-50 text-emerald-800 p-2 rounded-lg border border-emerald-200">
+                            <span class="block text-[10px] text-stone-400">SECRET SPEED</span>
+                            <span class="text-base">${card.Secret_Speed}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                statsBox.innerHTML = `
+                    <div class="bg-white p-3 rounded-lg border border-stone-300">
+                        <span class="block text-[10px] font-black uppercase text-stone-400 code-font mb-1">SPELL EFFECT DESCRIPTION</span>
+                        <p class="text-sm font-bold text-stone-800 leading-relaxed">${card.SpellEffect_Desc}</p>
+                    </div>
+                `;
+            }
+
+            const modal = document.getElementById('cardInspectModal');
+            const body = document.getElementById('modalCardBody');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+            body.classList.remove('scale-95');
+            body.classList.add('scale-100');
+        }
+
+        function closeCardModal() {
+            const modal = document.getElementById('cardInspectModal');
+            const body = document.getElementById('modalCardBody');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            body.classList.remove('scale-100');
+            body.classList.add('scale-95');
+        }
+
+        window.onload = fetchCards;
+    </script>
+</body>
+</html>

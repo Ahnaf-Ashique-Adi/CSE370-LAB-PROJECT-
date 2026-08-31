@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recess Duel // 2-Slot Desk Arena</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Clean Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@500;700;800&family=Space+Grotesk:wght@600;700&family=Syne:wght@700;800&family=Fira+Code:wght@400;700&family=Caveat:wght@700&display=swap" rel="stylesheet">
+    
+    <!-- Three.js Engine -->
+    <script src="three.min.js"></script>
+
+    <style>
+        :root {
+            --body-font: 'Inter', sans-serif;
+            --header-font: 'Space Grotesk', sans-serif;
+        }
+
+        body {
+            font-family: var(--body-font);
+            background-color: #f6f5f2;
+            background-image: 
+                linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: #1c1917;
+            letter-spacing: -0.01em;
+        }
+
+        .header-font { font-family: var(--header-font) !important; font-weight: 700; }
+        .code-font { font-family: 'Fira Code', monospace; }
+
+        .sketch-border {
+            border: 3px solid #1c1917;
+            border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+            box-shadow: 4px 4px 0px rgba(28, 25, 23, 0.15);
+        }
+        .sketch-border-sm {
+            border: 2px solid #1c1917;
+            border-radius: 120px 8px 110px 8px/8px 110px 8px 120px;
+        }
+
+        .pencil-hatch {
+            background-color: #2b2725;
+            background-image: repeating-linear-gradient(
+                45deg,
+                rgba(255, 255, 255, 0.15),
+                rgba(255, 255, 255, 0.15) 3px,
+                transparent 3px,
+                transparent 7px
+            );
+            box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.5);
+        }
+
+        @keyframes pencil-wiggle {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-2px) rotate(-1deg); }
+            75% { transform: translateY(1px) rotate(1.5deg); }
+        }
+        .animate-pencil-jitter {
+            animation: pencil-wiggle 0.2s infinite ease-in-out;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #1c1917; border-radius: 3px; }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col justify-between p-4 md:p-6 select-none relative">
+
+    <!-- Sketchy Outer Border -->
+    <div class="absolute inset-3 pointer-events-none sketch-border border-[4px] z-40 border-stone-900 shadow-[inset_0_0_30px_rgba(0,0,0,0.05)]"></div>
+
+    <!-- 1. DOODLE LOADER OVERLAY -->
+    <div id="sceneLoader" style="display: none;" class="fixed inset-0 bg-[#f6f5f2]/95 z-50 flex flex-col items-center justify-center backdrop-blur-sm transition-all duration-300">
+        <div class="max-w-md w-full p-8 text-center relative flex flex-col items-center">
+            <div class="w-full bg-white p-6 sketch-border relative shadow-2xl">
+                <span class="text-3xl inline-block animate-pencil-jitter mb-1 code-font font-black text-stone-800">[ /_ ]</span>
+                <h2 id="loaderTitle" class="text-2xl font-black header-font text-stone-900 uppercase tracking-wider">
+                    RETURNING TO DESK...
+                </h2>
+                <p id="loaderSubtext" class="text-sm code-font text-rose-800 font-bold tracking-wide mt-1">
+                    Packing battle mat & syncing student ledger...
+                </p>
+
+                <div class="mt-6 w-full p-1 sketch-border-sm bg-stone-50 relative h-7 overflow-hidden">
+                    <div id="loaderProgressBar" class="pencil-hatch h-full w-0 transition-all duration-200 relative rounded-sm"></div>
+                </div>
+
+                <div class="mt-3 flex justify-between items-center text-xs code-font text-stone-500 font-bold">
+                    <span id="loaderQueryLog">UPDATE PROFILE SET In_Match=0;</span>
+                    <span id="loaderPercent" class="text-stone-900 font-black">0%</span>
+                </div>
+            </div>
+            <div class="mt-4 text-xs code-font text-stone-400 font-bold tracking-widest uppercase">
+                // Please hold while ink dries
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. ACTIVE PAUSE MODAL OVERLAY -->
+    <div id="pauseModal" class="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+        <div id="pauseModalBody" class="bg-[#f6f5f2] sketch-border max-w-sm w-full p-6 relative flex flex-col items-center text-center shadow-2xl transform scale-95 transition-all duration-300">
+            
+            <div class="inline-block bg-amber-100 border-2 border-stone-900 px-3 py-0.5 rounded sketch-border-sm text-[10px] code-font font-black text-amber-950 uppercase tracking-widest mb-3">
+                // CLASSROOM RECESS TIMEOUT
+            </div>
+
+            <h2 class="text-3xl font-black header-font text-stone-900 uppercase tracking-tight">
+                MATCH PAUSED
+            </h2>
+            
+            <div class="w-16 h-1 bg-rose-800 my-2.5 rounded-full"></div>
+
+            <p class="text-xs font-bold code-font text-stone-600 mb-6">
+                The game loop is suspended. You can resume your moves or return to the main student run dashboard.
+            </p>
+
+            <div class="w-full space-y-2.5">
+                <button type="button" onclick="resumeGame()" class="w-full bg-stone-900 hover:bg-stone-800 text-white font-black header-font text-xs py-3 rounded uppercase tracking-wider transition-all transform active:scale-95 shadow cursor-pointer">
+                    RESUME DUEL ▶ (ESC / P)
+                </button>
+                <button type="button" onclick="returnToRunDashboard()" class="w-full bg-white hover:bg-stone-100 text-rose-900 border-2 border-stone-900 font-black header-font text-xs py-2.5 rounded uppercase tracking-wider transition-all transform active:scale-95 shadow cursor-pointer">
+                    &larr; RETURN TO DASHBOARD
+                </button>
+            </div>
+
+            <span class="block mt-4 text-[10px] code-font font-bold text-stone-400 uppercase">
+                SESSION #<span id="pauseProfileIdBadge">--</span> // DATABASE SYNCED
+            </span>
+        </div>
+    </div>
+
+    <!-- 3. SPELL ACTIVATION CONFIRMATION MODAL -->
+    <div id="spellModal" class="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-sm flex items-center justify-center p-4 transition-all duration-300 opacity-0 pointer-events-none">
+        <div id="spellModalBody" class="bg-[#f6f5f2] sketch-border max-w-sm w-full p-6 relative flex flex-col items-center text-center shadow-2xl transform scale-95 transition-all duration-300">
+            
+            <div class="inline-block bg-blue-100 border-2 border-blue-900 px-3 py-0.5 rounded sketch-border-sm text-[10px] code-font font-black text-blue-950 uppercase tracking-widest mb-3">
+                // SPELL ACTIVATION PROMPT
+            </div>
+
+            <h3 id="spellModalTitle" class="text-2xl font-black header-font text-stone-900 uppercase tracking-tight">
+                UNLEASH SPELL?
+            </h3>
+
+            <p id="spellModalDesc" class="text-xs font-semibold code-font text-stone-700 bg-white border border-stone-300 p-3 rounded my-4 leading-relaxed">
+                Spell effect description...
+            </p>
+
+            <p id="spellCooldownWarning" class="text-[11px] font-bold code-font text-rose-700 mb-4">
+                Will trigger a 1-turn cooldown period.
+            </p>
+
+            <div class="w-full grid grid-cols-2 gap-2">
+                <button type="button" onclick="confirmSpellCast()" id="btnConfirmSpell" class="w-full bg-blue-800 hover:bg-blue-700 text-white font-black header-font text-xs py-2.5 rounded uppercase tracking-wider shadow cursor-pointer">
+                    YES, CAST!
+                </button>
+                <button type="button" onclick="closeSpellModal()" class="w-full bg-white hover:bg-stone-100 text-stone-900 border-2 border-stone-900 font-black header-font text-xs py-2.5 rounded uppercase tracking-wider shadow cursor-pointer">
+                    NO, KEEP
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOP HEADER HUD -->
+    <header class="w-full flex justify-between items-center z-30 px-3">
+        <button type="button" onclick="togglePauseModal()" class="bg-white hover:bg-stone-100 text-stone-900 text-xs font-black px-4 py-2 sketch-border-sm code-font uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 shadow">
+            <span>[ || ]</span> PAUSE (ESC)
+        </button>
+
+        <div class="flex items-center gap-3 code-font">
+            <span id="turnCounterBadge" class="bg-stone-900 text-white text-xs px-3.5 py-1.5 sketch-border-sm font-bold tracking-wider">
+                TURN 1 // YOUR TURN
+            </span>
+            <span id="spellCooldownBadge" class="text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 sketch-border-sm">
+                SPELL: READY
+            </span>
+        </div>
+    </header>
+
+    <!-- MAIN DUEL ARENA -->
+    <main class="w-full flex-grow grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch z-20 py-2 overflow-hidden">
+        
+        <!-- 3D Tabletop Mat -->
+        <section class="lg:col-span-8 h-full bg-white rounded-2xl sketch-border relative overflow-hidden flex flex-col">
+            <div id="tableCanvasContainer" class="w-full h-full relative cursor-pointer">
+                <canvas id="duelTableCanvas" class="w-full h-full block"></canvas>
+            </div>
+            
+            <div class="absolute top-3 left-4 bg-stone-900/90 text-white px-3 py-1 rounded sketch-border-sm text-[11px] code-font shadow" id="battlePrompt">
+                The desk is clear. Place a Monster or Spell into an open slot.
+            </div>
+        </section>
+
+        <!-- Command Drawer & Hand -->
+        <section class="lg:col-span-4 h-full flex flex-col justify-between bg-white rounded-2xl sketch-border p-4 overflow-hidden gap-3">
+            <div>
+                <div class="flex justify-between items-center border-b pb-2 mb-2">
+                    <h2 class="header-font font-black text-sm uppercase text-stone-900">STUDENT DECK / DRAWER</h2>
+                    <span class="text-[10px] code-font text-stone-500">2 SLOTS PER SIDE</span>
+                </div>
+                
+                <div id="playerHandContainer" class="space-y-2 overflow-y-auto max-h-[350px] pr-1"></div>
+            </div>
+
+            <div class="bg-stone-50 p-3 rounded-lg border-2 border-stone-900 sketch-border-sm flex flex-col gap-2">
+                <button type="button" id="btnEndTurn" onclick="executeTurnEnd()" class="w-full bg-stone-900 hover:bg-rose-900 text-white font-black header-font text-xs py-2.5 rounded uppercase tracking-wider transition-all shadow cursor-pointer">
+                    END TURN & ATTACK ▶
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER STATUS -->
+    <footer class="w-full flex justify-between items-center text-[10px] code-font font-bold text-stone-500 z-30 px-3">
+        <span id="sessionDetails">PROFILE #-- // MATCH: ACTIVE</span>
+        <span id="instructionText">Rules: 1 Monster Max unless Spell is placed | Spells cast only from table</span>
+    </footer>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const activeProfileId = params.get('profile_id') || '1';
+        const activeAccountId = params.get('account_id') || sessionStorage.getItem('logged_account_id') || '1';
+
+        document.getElementById('pauseProfileIdBadge').innerText = activeProfileId;
+
+        let matchId = 1;
+        let currentTurn = 1;
+        let turnsSinceSpellUsed = 1;
+        let isPlayerTurn = true;
+        let isAnimating = false;
+        let isGamePaused = false;
+
+        let selectedAttackerIndex = null;
+        let selectedTargetIndex = null;
+        let pendingSpellSlot = null;
+
+        let playerHand = [];
+        let playerSpells = [];
+        let opponentHand = [];
+        let opponentSpells = [];
+        
+        let boardState = {
+            player: [null, null],
+            opponent: [null, null]
+        };
+
+        // --- SQL SYNCHRONIZATION HELPER ---
+        async function syncBoardSlotToDatabase(cardId, slotIndex, sideOwner, action = 'PLACE') {
+            try {
+                await fetch('update_board_slot.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        match_id: matchId,
+                        card_id: cardId,
+                        slot_index: slotIndex,
+                        side_owner: sideOwner.toUpperCase(),
+                        action: action
+                    })
+                });
+            } catch (e) {
+                console.warn("SQL slot sync skipped:", e);
+            }
+        }
+
+        // --- AUDIO ENGINE ---
+        let audioCtx = null;
+        function playTone(pitchStart = 500, pitchEnd = 800, duration = 0.08, volume = 0.025) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(pitchStart * 0.7, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(pitchEnd * 0.7, audioCtx.currentTime + duration);
+                gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        // --- GRAPHITE LOADER ---
+        function executeWithLoader(options, actionCallback) {
+            const loader = document.getElementById('sceneLoader');
+            const bar = document.getElementById('loaderProgressBar');
+            const title = document.getElementById('loaderTitle');
+            const subtext = document.getElementById('loaderSubtext');
+            const sqlLog = document.getElementById('loaderQueryLog');
+            const percent = document.getElementById('loaderPercent');
+
+            title.innerText = options.title || "RETURNING TO DASHBOARD...";
+            bar.style.width = '0%';
+            percent.innerText = '0%';
+
+            loader.style.display = 'flex';
+
+            const steps = options.steps || [
+                { pct: 35, msg: "Saving match session data...", sql: `UPDATE \`MATCH\` SET Result='SUSPENDED' WHERE Match_ID=${matchId};` },
+                { pct: 75, msg: "Querying student account run slots...", sql: `SELECT * FROM PROFILE WHERE Account_ID=${activeAccountId};` },
+                { pct: 100, msg: "Restoring desk ledger...", sql: "HTTP/1.1 200 OK" }
+            ];
+
+            let stepIdx = 0;
+            const runStep = () => {
+                if (stepIdx >= steps.length) {
+                    setTimeout(() => {
+                        if (actionCallback) actionCallback();
+                    }, 200);
+                    return;
+                }
+
+                const step = steps[stepIdx];
+                bar.style.width = step.pct + '%';
+                percent.innerText = step.pct + '%';
+                subtext.innerText = step.msg;
+                sqlLog.innerText = step.sql;
+
+                playTone(400 + (stepIdx * 120), 700 + (stepIdx * 140), 0.08, 0.03);
+
+                stepIdx++;
+                setTimeout(runStep, options.stepDelay || 130);
+            };
+
+            setTimeout(runStep, 60);
+        }
+
+        function returnToRunDashboard() {
+            playTone(800, 400, 0.15, 0.05);
+            executeWithLoader({
+                title: "RESTORING RUN DASHBOARD...",
+                stepDelay: 130
+            }, () => {
+                window.location.href = `index.html?view=dashboard&account_id=${activeAccountId}`;
+            });
+        }
+
+        // --- PAUSE CONTROLS ---
+        function togglePauseModal() {
+            if (isGamePaused) resumeGame();
+            else pauseGame();
+        }
+
+        function pauseGame() {
+            if (isAnimating) return;
+            isGamePaused = true;
+            playTone(600, 350, 0.12, 0.04);
+            const modal = document.getElementById('pauseModal');
+            const body = document.getElementById('pauseModalBody');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+            body.classList.remove('scale-95');
+            body.classList.add('scale-100');
+        }
+
+        function resumeGame() {
+            isGamePaused = false;
+            playTone(350, 750, 0.12, 0.04);
+            const modal = document.getElementById('pauseModal');
+            const body = document.getElementById('pauseModalBody');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            body.classList.remove('scale-100');
+            body.classList.add('scale-95');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') togglePauseModal();
+        });
+
+        // --- 3D ARENA ---
+        let tableScene, tableCamera, tableRenderer, raycaster, mouse;
+        let cardMeshes = { player: [null, null], opponent: [null, null] };
+
+        function init3D() {
+            const container = document.getElementById('tableCanvasContainer');
+            const canvas = document.getElementById('duelTableCanvas');
+            
+            tableScene = new THREE.Scene();
+            tableScene.background = new THREE.Color(0xf6f5f2);
+
+            tableCamera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 100);
+            tableCamera.position.set(0, 6.4, 5.8);
+            tableCamera.lookAt(0, 0, 0);
+
+            tableRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+            tableRenderer.setSize(container.clientWidth, container.clientHeight);
+            tableRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            window.addEventListener('resize', () => {
+                if (!container) return;
+                tableCamera.aspect = container.clientWidth / container.clientHeight;
+                tableCamera.updateProjectionMatrix();
+                tableRenderer.setSize(container.clientWidth, container.clientHeight);
+            });
+
+            container.addEventListener('click', onTableCanvasClick);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 1.4);
+            tableScene.add(ambient);
+
+            const slabGeo = new THREE.BoxGeometry(5.8, 0.2, 4.8);
+            const slab = new THREE.Mesh(slabGeo, new THREE.MeshBasicMaterial({ color: 0xede8dc }));
+            slab.add(new THREE.LineSegments(new THREE.EdgesGeometry(slabGeo), new THREE.LineBasicMaterial({ color: 0x1c1917, linewidth: 2 })));
+            tableScene.add(slab);
+
+            const grid = new THREE.GridHelper(4.8, 4, 0x94a3b8, 0xd1d5db);
+            grid.position.y = 0.11;
+            tableScene.add(grid);
+
+            [-1.2, 1.2].forEach((x) => {
+                const pSlot = createSlotMarker(x, 1.05, 0x10b981);
+                tableScene.add(pSlot);
+                const oSlot = createSlotMarker(x, -1.05, 0xef4444);
+                tableScene.add(oSlot);
+            });
+
+            animate();
+        }
+
+        function createSlotMarker(x, z, color) {
+            const geo = new THREE.PlaneGeometry(1.4, 1.9);
+            const mat = new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: 0.14 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.set(x, 0.12, z);
+            return mesh;
+        }
+
+        function createCardCanvasTexture(card, side, isSelected = false, isTargeted = false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 360;
+            const ctx = canvas.getContext('2d');
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 256, 360);
+
+            if (isSelected) {
+                ctx.strokeStyle = '#e11d48';
+                ctx.lineWidth = 16;
+            } else if (isTargeted) {
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 16;
+            } else {
+                ctx.strokeStyle = '#1c1917';
+                ctx.lineWidth = 10;
+            }
+            ctx.strokeRect(5, 5, 246, 350);
+
+            const isMonster = !card.SpellEffect_Desc;
+
+            ctx.fillStyle = side === 'PLAYER' ? (isMonster ? '#991b1b' : '#1d4ed8') : '#1e3a8a';
+            ctx.fillRect(16, 16, 224, 45);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 15px sans-serif';
+            ctx.fillText(card.Card_Name.toUpperCase(), 24, 44);
+
+            ctx.fillStyle = side === 'PLAYER' ? '#fee2e2' : '#e0e7ff';
+            ctx.fillRect(16, 68, 224, 150);
+
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            const texture = new THREE.CanvasTexture(canvas);
+            img.onload = () => {
+                ctx.drawImage(img, 16, 68, 224, 150);
+                redrawStats(ctx, card, isMonster);
+                texture.needsUpdate = true;
+            };
+            img.src = card.Card_Image || `https://picsum.photos/seed/${card.Card_ID}/300/200`;
+
+            redrawStats(ctx, card, isMonster);
+            return texture;
+        }
+
+        function redrawStats(ctx, card, isMonster) {
+            ctx.fillStyle = '#1c1917';
+            ctx.font = 'bold 13px monospace';
+            ctx.fillText(`LV ${card.Upgrade_Level || 1}`, 24, 94);
+
+            if (isMonster) {
+                const maxHp = card.MaxHealth || card.Health;
+                const hpRatio = Math.max(0, card.Health / maxHp);
+
+                ctx.fillStyle = '#e2e8f0';
+                ctx.fillRect(16, 230, 224, 22);
+                ctx.fillStyle = hpRatio > 0.5 ? '#10b981' : (hpRatio > 0.25 ? '#f59e0b' : '#ef4444');
+                ctx.fillRect(16, 230, 224 * hpRatio, 22);
+                ctx.strokeStyle = '#1c1917';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(16, 230, 224, 22);
+
+                ctx.fillStyle = '#1c1917';
+                ctx.font = 'bold 14px monospace';
+                ctx.fillText(`HP: ${card.Health} / ${maxHp}`, 24, 246);
+
+                ctx.fillStyle = '#991b1b';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.fillText(`ATK: ${card.Attack}`, 24, 290);
+
+                ctx.fillStyle = '#065f46';
+                ctx.font = 'bold 16px monospace';
+                ctx.fillText(`SPEED: ${card.Secret_Speed || 50}`, 24, 325);
+            } else {
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 14px monospace';
+                ctx.fillText("SPELL SCROLL:", 24, 245);
+                ctx.font = '13px sans-serif';
+                ctx.fillStyle = '#475569';
+                ctx.fillText(card.SpellEffect_Desc.slice(0, 28) + '...', 24, 275);
+                ctx.fillText('[ CLICK TO CAST ]', 24, 305);
+            }
+        }
+
+        function render3DCard(card, side, slotIndex, isSelected = false, isTargeted = false) {
+            if (cardMeshes[side][slotIndex]) {
+                tableScene.remove(cardMeshes[side][slotIndex]);
+                cardMeshes[side][slotIndex] = null;
+            }
+            if (!card) return;
+
+            const group = new THREE.Group();
+            group.userData = { side, slotIndex };
+
+            const geo = new THREE.BoxGeometry(1.3, 0.04, 1.8);
+            const tex = createCardCanvasTexture(card, side.toUpperCase(), isSelected, isTargeted);
+            
+            const mats = [
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+                new THREE.MeshBasicMaterial({ map: tex }),
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 }),
+                new THREE.MeshBasicMaterial({ color: 0x1c1917 })
+            ];
+            const mesh = new THREE.Mesh(geo, mats);
+            group.add(mesh);
+
+            const posX = -1.2 + (slotIndex * 2.4);
+            const posZ = side === 'player' ? 1.05 : -1.05;
+            const posY = isSelected ? 0.38 : (isTargeted ? 0.28 : 0.16);
+
+            group.position.set(posX, posY, posZ);
+            tableScene.add(group);
+            cardMeshes[side][slotIndex] = group;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (tableRenderer && tableScene && tableCamera && !isGamePaused) {
+                tableRenderer.render(tableScene, tableCamera);
+            }
+        }
+
+        // --- INTERACTION & TARGETING ---
+        function onTableCanvasClick(event) {
+            if (!isPlayerTurn || isAnimating || isGamePaused) return;
+
+            const rect = tableRenderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, tableCamera);
+            const intersects = raycaster.intersectObjects(tableScene.children, true);
+
+            for (let hit of intersects) {
+                let current = hit.object;
+                while (current.parent && current.parent !== tableScene) {
+                    current = current.parent;
+                }
+
+                if (current.userData && current.userData.side) {
+                    const { side, slotIndex } = current.userData;
+
+                    if (side === 'player') {
+                        const clickedCard = boardState.player[slotIndex];
+                        if (!clickedCard) return;
+
+                        if (clickedCard.SpellEffect_Desc) {
+                            openSpellModal(clickedCard, slotIndex);
+                            return;
+                        }
+
+                        if (selectedAttackerIndex === slotIndex) {
+                            selectedAttackerIndex = null;
+                            render3DCard(boardState.player[slotIndex], 'player', slotIndex, false, false);
+                            document.getElementById('battlePrompt').innerText = "Attacker deselected.";
+                        } else {
+                            if (selectedAttackerIndex !== null) {
+                                render3DCard(boardState.player[selectedAttackerIndex], 'player', selectedAttackerIndex, false, false);
+                            }
+                            selectedAttackerIndex = slotIndex;
+                            render3DCard(boardState.player[slotIndex], 'player', slotIndex, true, false);
+                            document.getElementById('battlePrompt').innerText = `Selected ${boardState.player[slotIndex].Card_Name}. Click enemy card to target.`;
+                        }
+                        playTone(600, 900, 0.06);
+                        return;
+                    } else if (side === 'opponent') {
+                        if (selectedAttackerIndex === null) {
+                            document.getElementById('battlePrompt').innerText = "Select your attacker card first!";
+                            return;
+                        }
+
+                        if (selectedTargetIndex === slotIndex) {
+                            selectedTargetIndex = null;
+                            render3DCard(boardState.opponent[slotIndex], 'opponent', slotIndex, false, false);
+                            document.getElementById('battlePrompt').innerText = "Target deselected.";
+                        } else {
+                            if (selectedTargetIndex !== null && boardState.opponent[selectedTargetIndex]) {
+                                render3DCard(boardState.opponent[selectedTargetIndex], 'opponent', selectedTargetIndex, false, false);
+                            }
+                            selectedTargetIndex = slotIndex;
+                            render3DCard(boardState.opponent[slotIndex], 'opponent', slotIndex, false, true);
+                            document.getElementById('battlePrompt').innerText = `Target locked on ${boardState.opponent[slotIndex].Card_Name}. Click 'END TURN & ATTACK' to tackle!`;
+                        }
+                        playTone(700, 1100, 0.06);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // --- SPELL ACTIVATION WINDOW ---
+        function openSpellModal(spellCard, slotIndex) {
+            pendingSpellSlot = slotIndex;
+            const modal = document.getElementById('spellModal');
+            const body = document.getElementById('spellModalBody');
+            const title = document.getElementById('spellModalTitle');
+            const desc = document.getElementById('spellModalDesc');
+            const warning = document.getElementById('spellCooldownWarning');
+            const btn = document.getElementById('btnConfirmSpell');
+
+            title.innerText = `UNLEASH ${spellCard.Card_Name.toUpperCase()}?`;
+            desc.innerText = spellCard.SpellEffect_Desc;
+
+            if (turnsSinceSpellUsed < 1) {
+                warning.innerText = `Spell on cooldown! Ready in ${1 - turnsSinceSpellUsed} turn(s).`;
+                warning.className = "text-[11px] font-bold code-font text-rose-700 mb-4";
+                btn.disabled = true;
+                btn.className = "w-full bg-stone-300 text-stone-500 font-black header-font text-xs py-2.5 rounded uppercase tracking-wider cursor-not-allowed";
+            } else {
+                warning.innerText = "Will trigger a 1-turn cooldown upon casting.";
+                warning.className = "text-[11px] font-bold code-font text-emerald-700 mb-4";
+                btn.disabled = false;
+                btn.className = "w-full bg-blue-800 hover:bg-blue-700 text-white font-black header-font text-xs py-2.5 rounded uppercase tracking-wider shadow cursor-pointer";
+            }
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+            body.classList.remove('scale-95');
+            body.classList.add('scale-100');
+            playTone(600, 1000, 0.1);
+        }
+
+        function closeSpellModal() {
+            pendingSpellSlot = null;
+            const modal = document.getElementById('spellModal');
+            const body = document.getElementById('spellModalBody');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            body.classList.remove('scale-100');
+            body.classList.add('scale-95');
+        }
+
+        function confirmSpellCast() {
+            if (pendingSpellSlot === null || turnsSinceSpellUsed < 1) return;
+
+            const spell = boardState.player[pendingSpellSlot];
+            boardState.player[pendingSpellSlot] = null;
+            render3DCard(null, 'player', pendingSpellSlot);
+            syncBoardSlotToDatabase(null, pendingSpellSlot, 'PLAYER', 'CLEAR');
+
+            turnsSinceSpellUsed = 0;
+            executeDynamicDatabaseSpell(spell);
+
+            closeSpellModal();
+            updateSpellBadge();
+            renderHandUI();
+            checkVictoryCondition();
+        }
+
+        // --- TEXT-DRIVEN DATABASE SPELL PARSER ENGINE ---
+        function executeDynamicDatabaseSpell(spell) {
+            const desc = (spell.SpellEffect_Desc || '').toLowerCase();
+            const numbers = desc.match(/\d+/g);
+            const primaryNum = numbers ? parseInt(numbers[0]) : 40;
+
+            let logMessage = `Cast ${spell.Card_Name}! `;
+
+            if (desc.includes('damage') || desc.includes('fire') || desc.includes('blast') || desc.includes('strikes') || desc.includes('nova')) {
+                boardState.opponent.forEach((card, i) => {
+                    if (card) {
+                        card.Health -= primaryNum;
+                        if (card.Health <= 0) {
+                            boardState.opponent[i] = null;
+                            render3DCard(null, 'opponent', i);
+                            syncBoardSlotToDatabase(null, i, 'OPPONENT', 'CLEAR');
+                        } else {
+                            render3DCard(card, 'opponent', i);
+                        }
+                    }
+                });
+                logMessage += `Dealt -${primaryNum} damage to opponent cards!`;
+            } else if (desc.includes('health') || desc.includes('restore') || desc.includes('heal') || desc.includes('barrier') || desc.includes('protection')) {
+                boardState.player.forEach((card, i) => {
+                    if (card && !card.SpellEffect_Desc) {
+                        card.Health = Math.min(card.MaxHealth, card.Health + primaryNum);
+                        render3DCard(card, 'player', i);
+                    }
+                });
+                logMessage += `Restored +${primaryNum} HP to friendly cards!`;
+            } else if (desc.includes('speed') || desc.includes('warp') || desc.includes('extra turn') || desc.includes('mana')) {
+                boardState.player.forEach((card, i) => {
+                    if (card && !card.SpellEffect_Desc) {
+                        card.Secret_Speed = (card.Secret_Speed || 50) + 30;
+                        render3DCard(card, 'player', i);
+                    }
+                });
+                logMessage += `Accelerated team speed by +30!`;
+            } else {
+                boardState.player.forEach((card, i) => {
+                    if (card && !card.SpellEffect_Desc) {
+                        card.Attack += 25;
+                        render3DCard(card, 'player', i);
+                    }
+                });
+                logMessage += `Empowered active units with +25 ATK!`;
+            }
+
+            document.getElementById('battlePrompt').innerText = logMessage;
+            playTone(800, 1600, 0.25, 0.05);
+        }
+
+        // --- SUBTLE TACKLE ANIMATION ---
+        function animateTackle(attackerSide, attackerSlot, defenderSide, defenderSlot) {
+            return new Promise((resolve) => {
+                const attackerMesh = cardMeshes[attackerSide][attackerSlot];
+                const defenderMesh = cardMeshes[defenderSide][defenderSlot];
+
+                if (!attackerMesh || !defenderMesh) {
+                    resolve();
+                    return;
+                }
+
+                isAnimating = true;
+                const startX = attackerMesh.position.x;
+                const startZ = attackerMesh.position.z;
+                const targetX = defenderMesh.position.x;
+                const targetZ = attackerSide === 'player' ? defenderMesh.position.z + 0.45 : defenderMesh.position.z - 0.45;
+
+                let progress = 0;
+                let forward = true;
+
+                const step = () => {
+                    if (isGamePaused) {
+                        requestAnimationFrame(step);
+                        return;
+                    }
+
+                    progress += 0.06;
+                    if (forward) {
+                        attackerMesh.position.x = THREE.MathUtils.lerp(startX, targetX, progress);
+                        attackerMesh.position.z = THREE.MathUtils.lerp(startZ, targetZ, progress);
+                        attackerMesh.position.y = 0.35 + Math.sin(progress * Math.PI) * 0.12;
+
+                        if (progress >= 1.0) {
+                            forward = false;
+                            progress = 0;
+                            playTone(300, 150, 0.1, 0.05);
+                        }
+                    } else {
+                        attackerMesh.position.x = THREE.MathUtils.lerp(targetX, startX, progress);
+                        attackerMesh.position.z = THREE.MathUtils.lerp(targetZ, startZ, progress);
+                        attackerMesh.position.y = THREE.MathUtils.lerp(0.35, 0.16, progress);
+
+                        if (progress >= 1.0) {
+                            attackerMesh.position.set(startX, 0.16, startZ);
+                            isAnimating = false;
+                            resolve();
+                            return;
+                        }
+                    }
+                    requestAnimationFrame(step);
+                };
+
+                requestAnimationFrame(step);
+            });
+        }
+
+        // --- TURN FLOW & SPEED CALCULATION ---
+        async function executeTurnEnd() {
+            if (!isPlayerTurn || isAnimating || isGamePaused) return;
+
+            const playerHasMonster = boardState.player.some(c => c && !c.SpellEffect_Desc);
+            const oppHasMonster = boardState.opponent.some(c => c !== null);
+
+            if (playerHasMonster && oppHasMonster) {
+                if (selectedAttackerIndex === null || selectedTargetIndex === null) {
+                    document.getElementById('battlePrompt').innerText = "No attack locked! Click your card, click the enemy card, then press End Turn.";
+                    return;
+                }
+
+                isPlayerTurn = false;
+                const attackerCard = boardState.player[selectedAttackerIndex];
+                const defenderCard = boardState.opponent[selectedTargetIndex];
+
+                document.getElementById('battlePrompt').innerText = `${attackerCard.Card_Name} attacks ${defenderCard.Card_Name}...`;
+                await animateTackle('player', selectedAttackerIndex, 'opponent', selectedTargetIndex);
+
+                const isFaster = (attackerCard.Secret_Speed || 50) >= (defenderCard.Secret_Speed || 50);
+                const actualDmg = isFaster ? attackerCard.Attack : Math.floor(attackerCard.Attack * 0.85);
+
+                defenderCard.Health -= actualDmg;
+                document.getElementById('battlePrompt').innerText = `Hit! Dealt -${actualDmg} DMG to ${defenderCard.Card_Name}!`;
+
+                if (defenderCard.Health <= 0) {
+                    boardState.opponent[selectedTargetIndex] = null;
+                    render3DCard(null, 'opponent', selectedTargetIndex);
+                    syncBoardSlotToDatabase(null, selectedTargetIndex, 'OPPONENT', 'CLEAR');
+                } else {
+                    render3DCard(defenderCard, 'opponent', selectedTargetIndex, false, false);
+                }
+
+                render3DCard(attackerCard, 'player', selectedAttackerIndex, false, false);
+                selectedAttackerIndex = null;
+                selectedTargetIndex = null;
+
+                if (checkVictoryCondition()) return;
+            } else {
+                isPlayerTurn = false;
+            }
+
+            document.getElementById('turnCounterBadge').innerText = `TURN ${currentTurn} // OPPONENT TURN`;
+            document.getElementById('battlePrompt').innerText = "Seatmate Row 2 is considering the board...";
+
+            setTimeout(executeOpponentTurn, 1400);
+        }
+
+        async function executeOpponentTurn() {
+            if (isGamePaused) {
+                setTimeout(executeOpponentTurn, 500);
+                return;
+            }
+
+            const oppMonsterCount = boardState.opponent.filter(c => c && !c.SpellEffect_Desc).length;
+            if (oppMonsterCount === 0 && opponentHand.length > 0) {
+                await new Promise(r => setTimeout(r, 600));
+                const newOppCard = opponentHand.shift();
+                boardState.opponent[0] = newOppCard;
+                render3DCard(newOppCard, 'opponent', 0);
+                syncBoardSlotToDatabase(newOppCard.Card_ID, 0, 'OPPONENT', 'PLACE');
+                document.getElementById('battlePrompt').innerText = `Opponent placed ${newOppCard.Card_Name} on table!`;
+                await new Promise(r => setTimeout(r, 800));
+            }
+
+            const activeOppSlots = boardState.opponent.map((c, i) => (c && !c.SpellEffect_Desc) ? i : null).filter(i => i !== null);
+            const activePlayerSlots = boardState.player.map((c, i) => (c && !c.SpellEffect_Desc) ? i : null).filter(i => i !== null);
+
+            if (activeOppSlots.length > 0 && activePlayerSlots.length > 0) {
+                const oppSlot = activeOppSlots[0];
+                const playerSlot = activePlayerSlots[0];
+                
+                const oppCard = boardState.opponent[oppSlot];
+                const playerCard = boardState.player[playerSlot];
+
+                document.getElementById('battlePrompt').innerText = `Opponent's ${oppCard.Card_Name} tackles your ${playerCard.Card_Name}!`;
+                await animateTackle('opponent', oppSlot, 'player', playerSlot);
+
+                playerCard.Health -= oppCard.Attack;
+                document.getElementById('battlePrompt').innerText = `Opponent dealt -${oppCard.Attack} DMG to your ${playerCard.Card_Name}!`;
+
+                if (playerCard.Health <= 0) {
+                    boardState.player[playerSlot] = null;
+                    render3DCard(null, 'player', playerSlot);
+                    syncBoardSlotToDatabase(null, playerSlot, 'PLAYER', 'CLEAR');
+                } else {
+                    render3DCard(playerCard, 'player', playerSlot);
+                }
+
+                await new Promise(r => setTimeout(r, 800));
+            }
+
+            if (checkVictoryCondition()) return;
+
+            currentTurn++;
+            turnsSinceSpellUsed++;
+            isPlayerTurn = true;
+
+            document.getElementById('turnCounterBadge').innerText = `TURN ${currentTurn} // YOUR TURN`;
+            document.getElementById('battlePrompt').innerText = "Your turn. Select your attacker and enemy target.";
+            updateSpellBadge();
+            renderHandUI();
+        }
+
+        // --- MATCH SETUP ---
+        async function startMatch() {
+            try {
+                const res = await fetch('init_match.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_id: activeProfileId })
+                });
+                const data = await res.json();
+                
+                if (data.success && data.player_monsters && data.player_monsters.length > 0) {
+                    matchId = data.match_id;
+                    playerHand = data.player_monsters.map(c => ({ ...c, MaxHealth: c.Health }));
+                    playerSpells = data.player_spells || [];
+                    opponentHand = (data.opponent_monsters || []).map(c => ({ ...c, MaxHealth: c.Health }));
+                    opponentSpells = data.opponent_spells || [];
+                } else {
+                    useFallbackData();
+                }
+            } catch (err) {
+                useFallbackData();
+            }
+
+            boardState.player = [null, null];
+            boardState.opponent = [null, null];
+
+            document.getElementById('sessionDetails').innerText = `PROFILE #${activeProfileId} // MATCH #${matchId}`;
+            renderHandUI();
+        }
+
+        function useFallbackData() {
+            playerHand = [
+                { Card_ID: 1, Card_Name: "Flame Drake", Upgrade_Level: 3, Health: 180, MaxHealth: 180, Attack: 60, Secret_Speed: 45, Card_Image: "https://picsum.photos/seed/monster_1/300/200" },
+                { Card_ID: 2, Card_Name: "Shadow Stalker", Upgrade_Level: 2, Health: 120, MaxHealth: 120, Attack: 70, Secret_Speed: 88, Card_Image: "https://picsum.photos/seed/monster_2/300/200" }
+            ];
+            playerSpells = [
+                { Card_ID: 18, Card_Name: "Fireball", Upgrade_Level: 2, SpellEffect_Desc: "Unleashes a fire blast dealing 60 fire damage across the table." },
+                { Card_ID: 21, Card_Name: "Arcane Shield", Upgrade_Level: 3, SpellEffect_Desc: "Restores 50 health to active desk monsters." }
+            ];
+            opponentHand = [
+                { Card_ID: 3, Card_Name: "Crystal Golem", Upgrade_Level: 5, Health: 240, MaxHealth: 240, Attack: 45, Secret_Speed: 15, Card_Image: "https://picsum.photos/seed/monster_3/300/200" },
+                { Card_ID: 4, Card_Name: "Frost Valkyrie", Upgrade_Level: 4, Health: 160, MaxHealth: 160, Attack: 55, Secret_Speed: 62, Card_Image: "https://picsum.photos/seed/monster_4/300/200" }
+            ];
+        }
+
+        function renderHandUI() {
+            const container = document.getElementById('playerHandContainer');
+            container.innerHTML = '';
+
+            const activeMonsterCount = boardState.player.filter(c => c && !c.SpellEffect_Desc).length;
+            const hasSpellOnBoard = boardState.player.some(c => c && c.SpellEffect_Desc);
+
+            playerHand.forEach((card, idx) => {
+                const canPlaceMonster = activeMonsterCount === 0 || hasSpellOnBoard;
+
+                const item = document.createElement('div');
+                item.className = "bg-stone-50 border-2 border-stone-900 p-2.5 rounded-lg flex justify-between items-center text-xs code-font";
+                item.innerHTML = `
+                    <div>
+                        <span class="font-black text-rose-900 uppercase block">${card.Card_Name}</span>
+                        <span class="text-[10px] text-stone-500">HP: ${card.Health} | ATK: ${card.Attack} | SPD: ${card.Secret_Speed || 50}</span>
+                    </div>
+                    <button onclick="deployMonster(${idx})" ${canPlaceMonster ? '' : 'disabled'} class="bg-stone-900 hover:bg-stone-800 text-white font-bold px-3 py-1.5 rounded text-[10px] header-font uppercase cursor-pointer disabled:opacity-30">
+                        PLACE
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+
+            playerSpells.forEach((spell, idx) => {
+                const item = document.createElement('div');
+                item.className = "p-2.5 rounded-lg flex justify-between items-center text-xs code-font border-2 bg-blue-50 border-blue-900";
+                item.innerHTML = `
+                    <div>
+                        <span class="font-black text-blue-900 uppercase block">${spell.Card_Name}</span>
+                        <span class="text-[10px] text-stone-600 truncate max-w-[150px] block">${spell.SpellEffect_Desc}</span>
+                    </div>
+                    <button onclick="placeSpellOnBoard(${idx})" class="bg-blue-800 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded text-[10px] header-font uppercase shadow cursor-pointer">
+                        SET ON MAT
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function deployMonster(index) {
+            const activeMonsters = boardState.player.filter(c => c && !c.SpellEffect_Desc).length;
+            const hasSpellOnBoard = boardState.player.some(c => c && c.SpellEffect_Desc);
+
+            if (activeMonsters >= 1 && !hasSpellOnBoard) {
+                alert("Only 1 Monster can stay active until a Spell card is set on the table!");
+                return;
+            }
+
+            const targetSlot = boardState.player[0] === null ? 0 : (boardState.player[1] === null ? 1 : -1);
+            if (targetSlot === -1) {
+                alert("All 2 table slots are occupied!");
+                return;
+            }
+
+            const card = playerHand.splice(index, 1)[0];
+            boardState.player[targetSlot] = card;
+            render3DCard(card, 'player', targetSlot);
+            syncBoardSlotToDatabase(card.Card_ID, targetSlot, 'PLAYER', 'PLACE');
+            renderHandUI();
+            document.getElementById('battlePrompt').innerText = `Placed ${card.Card_Name}. Click it and an enemy card to select attack target.`;
+        }
+
+        function placeSpellOnBoard(index) {
+            const targetSlot = boardState.player[1] === null ? 1 : (boardState.player[0] === null ? 0 : -1);
+            if (targetSlot === -1) {
+                alert("No empty table slot to place spell scroll!");
+                return;
+            }
+
+            const spell = playerSpells.splice(index, 1)[0];
+            boardState.player[targetSlot] = spell;
+            render3DCard(spell, 'player', targetSlot);
+            syncBoardSlotToDatabase(spell.Card_ID, targetSlot, 'PLAYER', 'PLACE');
+            renderHandUI();
+            document.getElementById('battlePrompt').innerText = `Placed ${spell.Card_Name} on table! Click the card on the desk mat anytime to cast it.`;
+        }
+
+        function updateSpellBadge() {
+            const badge = document.getElementById('spellCooldownBadge');
+            if (turnsSinceSpellUsed >= 1) {
+                badge.className = "text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 px-3 py-1 sketch-border-sm";
+                badge.innerText = "SPELL: READY";
+            } else {
+                badge.className = "text-xs font-bold bg-stone-100 text-stone-600 border border-stone-300 px-3 py-1 sketch-border-sm";
+                badge.innerText = `SPELL: CD (${1 - turnsSinceSpellUsed}T)`;
+            }
+        }
+
+        function checkVictoryCondition() {
+            const oppHasCards = boardState.opponent.some(c => c !== null) || opponentHand.length > 0;
+            const playerHasCards = boardState.player.some(c => c !== null) || playerHand.length > 0;
+
+            if (!oppHasCards && (boardState.player.some(c => c !== null))) {
+                concludeMatch('VICTORY', 50);
+                alert("VICTORY! You routed the opponent's desk and earned 50 Crayons.");
+                returnToRunDashboard();
+                return true;
+            } else if (!playerHasCards && (boardState.opponent.some(c => c !== null))) {
+                concludeMatch('DEFEAT', 0);
+                alert("DEFEAT! All your monsters were cleared.");
+                returnToRunDashboard();
+                return true;
+            }
+            return false;
+        }
+
+        async function concludeMatch(result, crayons) {
+            try {
+                await fetch('end_match.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        match_id: matchId,
+                        profile_id: activeProfileId,
+                        result: result,
+                        crayons_earned: crayons
+                    })
+                });
+            } catch (e) {}
+        }
+
+        window.onload = function() {
+            init3D();
+            startMatch();
+        };
+    </script>
+</body>
+</html>
